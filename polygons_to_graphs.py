@@ -3,9 +3,12 @@ import os
 from matplotlib.patches import Circle
 import matplotlib.pyplot as plt
 import numpy as np
+import scipy.spatial.distance
+from matplotlib.patches import ConnectionPatch
+from scipy import stats
 
 BASE_DIR = 'M:\Cell Graph'
-FILE_NAME = 'polygons_2.txt'
+FILE_NAME = 'polygons.txt'
 
 
 
@@ -30,21 +33,41 @@ def normalise(df):
                  'Other': np.array(normlised_o)}
     return data_dict
 
-def add_node(row, ax):
-    node_circle = Circle((row[0], row[1]), radius=0.01, color='red')
-    ax.add_patch(node_circle)
+def add_node(arr, ax):
+    for row in arr:
+        node_circle = Circle((row[0], 1-row[1]), radius=50, color='red')
+        ax.add_patch(node_circle)
+
+def add_node_to_img(arr, ax):
+    for row in arr:
+        node_circle = Circle((row[0]*ax.get_xlim()[1], (row[1])*ax.get_ylim()[0]), radius=30, color='red')
+        ax.add_patch(node_circle)
 
 
 data = pd.read_csv(os.path.join(BASE_DIR, FILE_NAME), sep = '\t')
 data_dict = normalise(data)
 
-
 fig = plt.figure()
 ax = fig.add_subplot(111)
 ax.set_aspect('equal')
-add_node(data.iloc[0], ax)
-add_node(data_dict['Epithelia'][0], ax)
-r = data_dict['Epithelia'][0]
-node_circle = Circle((r[0], r[1]), radius=0.01, color='red')
-ax.add_patch(node_circle)
-plt.imshow()
+add_node(data_dict['Epithelia'], ax)
+
+x = data_dict['Epithelia'][:,0]
+y = data_dict['Epithelia'][:,1]
+
+H, xedges, yedges = np.histogram2d(x,y, bins=100)
+H=H.T
+plt.imshow(H)
+np.histogram(H)
+np.max(H)
+r = stats.binned_statistic_2d(x, y, None, 'mean')
+
+
+img_file = 'B14.22816_J_HE.png'
+img = plt.imread(os.path.join(BASE_DIR, img_file))
+fig = plt.figure()
+ax = fig.add_subplot(111)
+ax.set_aspect('equal')
+ax.imshow(img)
+ax.set_aspect('equal')
+add_node_to_img(data_dict['Epithelia'], ax)
