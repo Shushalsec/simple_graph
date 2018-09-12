@@ -3,118 +3,71 @@ import os
 from matplotlib.patches import Circle
 import matplotlib.pyplot as plt
 import numpy as np
+import scipy.spatial.distance
 from matplotlib.patches import ConnectionPatch
+from scipy import stats
+
+BASE_DIR = 'M:\Cell Graph'
+FILE_NAME = 'polygons.txt'
+
+
 
 
 def normalise(df):
-    """
-    :param df: pandas df with the centroid coordinates in columns 1 and 2 and the cell type in column 0
-    :return: a dictionary with tissue types as keys and normalised list of coordinates as values
-    """
-
-    epi_norm = []  # empty list for the cell centroids that are from epithelium
-    other_norm = []  # empty list to add the other type of centroids
-    max_x = df.max(axis=0)[1]  # maximum x coordinate value
-    max_y = df.max(axis=0)[2]  # maximum y coordinate value
-    min_x = df.min(axis=0)[1]  # minimum x coordinate
-    min_y = df.min(axis=0)[2]  # minimum y coordinate
-    range_x = max_x - min_x  # range of x
-    range_y = max_y - min_y  # range of y
+    normalised_e = []
+    normlised_o = []
+    max_x = data.max(axis=0)[1]
+    max_y = data.max(axis=0)[2]
+    min_x = data.min(axis=0)[1]
+    min_y = data.min(axis=0)[2]
+    range_x = max_x - min_x
+    range_y = max_y - min_y
     for i, row in data.iterrows():
-        x = (row[1] - min_x) / range_x  # normalise
-        y = (row[2] - min_y) / range_y  # normalise
+        x = (row[1] - min_x) / (range_x)
+        y = (row[2] - min_y) / (range_y)
         if 'Epithelia' in row[0]:
-            epi_norm.append([x, y])  # add to epithelia if epithelial
+            normalised_e.append([x, y])
         else:
-            other_norm.append([x, y])  # add to other otherwise
-    # save as a dictionary with 2 elements
-    output_dict = {'Epithelia': np.array(epi_norm), 'Other': np.array(other_norm)}
-    return output_dict
+            normlised_o.append([x, y])
+    data_dict = {'Epithelia': np.array(normalised_e),
+                 'Other': np.array(normlised_o)}
+    return data_dict
 
-
-def add_node(arr, ax, radius=0.01, color='red', alpha=0.5):
-    """
-    Function for drawing a separate graph (not on top of an image)
-    :param arr: array or matrix of [0,1] normalised coordinates
-    :param ax: axis on which to add the circle
-    :param radius: size of circles
-    :param color: color of the circles
-    :param alpha: transparency of them circles
-    :return: nothing; just draw them circles
-    """
+def add_node(arr, ax):
     for row in arr:
-        x = row[0]  # the first column number = coordinate x
-        y = 1-row[1]  # the y coordinate flipped over because the axis starts from the bottom for y instead of top
-        node_circle = Circle((x, y), alpha, radius, color)
+        node_circle = Circle((row[0], 1-row[1]), radius=50, color='red')
+        ax.add_patch(node_circle)
+
+def add_node_to_img(arr, ax):
+    for row in arr:
+        node_circle = Circle((row[0]*ax.get_xlim()[1], (row[1])*ax.get_ylim()[0]), radius=30, color='red')
         ax.add_patch(node_circle)
 
 
-def add_node_to_img(row, ax, alpha=0.5, radius=0.01, color='red'):
-    """
-    Function for drawing ONE circle or node on top of an image
-    :param row: row of coordinate set x,y that are [0, 1] normalised
-    :param ax: axis on which to draw the image and the circles
-    :param alpha: transparency of them circles
-    :param radius: circle size
-    :param color: circle color
-    :return: nothing, just show the image and the circles on top
-    """
-    ax.imshow(img)  # draw the image
-    x = row[0] * ax.get_xlim()[1]  # first coordinate normalised to the image sizes
-    y = row[1] * ax.get_ylim()[0]  # second one normalised
-    node_circle = Circle((x, y), alpha=alpha, radius=radius, color=color)
-    ax.add_patch(node_circle)
-
-
-def point_dist(row, type_coords, th=2):
-    """
-    for 1 line of the xy coordinate matrix identify other coordinates within threshold Manhattan distance from the
-    given point
-    :param row: one row of the coordinate list
-    :param type_coords: coordinate array for one type of tisue that is of interest
-    :param th: threshold withing which the search for points is done
-    :return: coordinates of points close enough to the given row point
-    """
-    d1 = row[0]  # separate the x
-    d2 = row[1]  # the y
-    # make a mask for filtering the points which are
-    # within the threshold (in either direction) for both x and y coordinates
-    mask = np.argwhere(((d1+th >= type_coords[:, 0]) & (d1-th <= type_coords[:, 0])) &
-                       ((d2+th >= type_coords[:, 1]) & (d1-th <= type_coords[:, 1])))
-    return type_coords[mask]  # output the actual values of the coordiantes from the original array
-
-
-def centroids_to_graph(df, image, cell_type='Epithelia', th=2, alpha=0.5, radius=0.01, color='red'):
-    coordinates = df[cell_type]  # extract the coordinates of the required tissue type
-    fig = plt.figure()  # construct a figure
-    ax = fig.add_subplot(111)  # get the axis
-    ax.imshow(image)  # display the image
-    # for each coordinate pair or raw of the coordinate array
-    for row in coordinates:
-        # construct a circle on top of an image that is already displayed
-        add_node_to_img(row, ax, alpha, radius, color)
-        neighbors = point_dist(row, coordinates, th)  # get the neighbors of the point (row) which are within the limit
-        x1, y1 = row[0], row[1]
-        # for each point to be connected
-        for point in neighbors:
-            # coordinates to be connected
-            x2 = point[0][0]
-            y2 = point[0][1]
-            edge = ConnectionPatch((x1, y1), (x2, y2), coordsA='data', color='red')
-            ax.add_patch(edge)
-
-
-# directry with the relevant files
-BASE_DIR = 'C:/Users/Shushan/Desktop/MSc/Master Thesis/Cell_graph'
-# file with the coordinates of the centroids extracted from QuPath
-FILE_NAME = 'polygons_patch.txt'
-
-# pandas dataframe with the coordinates9
-data = pd.read_csv(os.path.join(BASE_DIR, FILE_NAME), sep='\t')
-# dictionary of coordinates by tissue type
+data = pd.read_csv(os.path.join(BASE_DIR, FILE_NAME), sep = '\t')
 data_dict = normalise(data)
-# image file into numpy
-image_file: str = 'B14.22816_J_HE.png'
-img = plt.imread(os.path.join(BASE_DIR, image_file))
-# do all
-centroids_to_graph(data_dict, img)
+
+fig = plt.figure()
+ax = fig.add_subplot(111)
+ax.set_aspect('equal')
+add_node(data_dict['Epithelia'], ax)
+
+x = data_dict['Epithelia'][:,0]
+y = data_dict['Epithelia'][:,1]
+
+H, xedges, yedges = np.histogram2d(x,y, bins=100)
+H=H.T
+plt.imshow(H)
+np.histogram(H)
+np.max(H)
+r = stats.binned_statistic_2d(x, y, None, 'mean')
+
+
+img_file = 'B14.22816_J_HE.png'
+img = plt.imread(os.path.join(BASE_DIR, img_file))
+fig = plt.figure()
+ax = fig.add_subplot(111)
+ax.set_aspect('equal')
+ax.imshow(img)
+ax.set_aspect('equal')
+add_node_to_img(data_dict['Epithelia'], ax)
