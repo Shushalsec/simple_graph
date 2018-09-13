@@ -32,6 +32,32 @@ def normalise(df):
     output_dict = {'Epithelia': np.array(epi_norm), 'Other': np.array(other_norm)}
     return output_dict
 
+def normalise_to_img(df, img):
+    epi_norm = []  # empty list for the cell centroids that are from epithelium
+    other_norm = []  # empty list to add the other type of centroids
+    max_x = df.max(axis=0)[1]  # maximum x coordinate value
+    max_y = df.max(axis=0)[2]  # maximum y coordinate value
+    min_x = df.min(axis=0)[1]  # minimum x coordinate
+    min_y = df.min(axis=0)[2]  # minimum y coordinate
+    range_x = max_x - min_x  # range of x
+    range_y = max_y - min_y  # range of y
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    img_x = ax.get_xlim()
+    img_y = ax.get_ylim()
+    for i, row in df.iterrows():
+        x = (row[1] - min_x) / range_x * img_x  # normalise
+        y = (row[2] - min_y) / range_y * img_y  # normalise
+        if 'Epithelia' in row[0]:
+            epi_norm.append([x, y])  # add to epithelia if epithelial
+        else:
+            other_norm.append([x, y])  # add to other otherwise
+    # save as a dictionary with 2 elements
+    output_dict = {'Epithelia': np.array(epi_norm), 'Other': np.array(other_norm)}
+    return output_dict, ax
+
+
+
 
 def draw_node(arr, ax, radius=0.01, color='red', alpha=0.5):
     """
@@ -123,20 +149,6 @@ def centroids_to_graph(df, image, cell_type='Epithelia', th=2, alpha=0.5, radius
             ax.add_patch(edge)
 
 
-# directry with the relevant files
-# BASE_DIR = 'C:/Users/Shushan/Desktop/MSc/Master Thesis/Cell_graph'
-BASE_DIR = 'M:/Cell Graph'
-# file with the coordinates of the centroids extracted from QuPath
-FILE_NAME = 'polygons_patch.txt'
-
-# pandas dataframe with the coordinates9
-data = pd.read_csv(os.path.join(BASE_DIR, FILE_NAME), sep='\t')
-# dictionary of coordinates by tissue type
-data_dict = normalise(data)
-# image file into numpy
-image_file: str = 'B14.22816_J_HE.png'
-img = plt.imread(os.path.join(BASE_DIR, image_file))
-
 
 # do all for separate graph
 def lonely_graph(centroids_file, threshold, node_size=10, edge_width=0.5):
@@ -163,6 +175,20 @@ def lonely_graph(centroids_file, threshold, node_size=10, edge_width=0.5):
     ax.set_xlim(0, 1)  # normalise the coordinate system to [0, 1]
     ax.set_ylim(0, 1)
     nx.draw(X, pos=pos, ax=ax, node_size=10, width=edge_width)
+    nx.write_gml(X, os.path.join(BASE_DIR, '{}.gml'.format(centroids_file.split('.', 1)[0])))
     print('Done!\n***')
 
+# directory with the relevant files
+BASE_DIR = 'C:/Users/Shushan/Desktop/MSc/Master Thesis/Cell_graph'
+# BASE_DIR = 'M:/Cell Graph'
+# file with the coordinates of the centroids extracted from QuPath
+FILE_NAME = 'polygons_patch.txt'
 lonely_graph(FILE_NAME, 0.03)
+
+def graph_and_image(centroids_file, image):
+    tissue = 'Epithelia'
+    print('***\nInitializing graph from the dataset')
+    data = pd.read_csv(os.path.join(BASE_DIR, centroids_file), sep='\t')
+    # dictionary of coordinates by tissue type
+    data_dict, ax = normalise_to_img(data, image)
+
