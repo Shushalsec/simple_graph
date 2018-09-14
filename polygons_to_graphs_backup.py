@@ -32,7 +32,14 @@ def normalise(df):
     output_dict = {'Epithelia': np.array(epi_norm), 'Other': np.array(other_norm)}
     return output_dict
 
-def normalise_to_img(df, img):
+
+def normalise_to_img(df, img_patch):
+    """
+    normalise the dataset ready for extracting a graph to be pasted on an image
+    :param df: dataset ex
+    :param img_patch:
+    :return:
+    """
     epi_norm = []  # empty list for the cell centroids that are from epithelium
     other_norm = []  # empty list to add the other type of centroids
     max_x = df.max(axis=0)[1]  # maximum x coordinate value
@@ -43,21 +50,20 @@ def normalise_to_img(df, img):
     range_y = max_y - min_y  # range of y
     fig = plt.figure()
     ax = fig.add_subplot(111)
-    img_x = ax.get_xlim()
-    img_y = ax.get_ylim()
+    ax.imshow(img_patch)
+    img_x = ax.get_xlim()[1]
+    img_y = ax.get_ylim()[0]
     print(img_x, img_y)
     for i, row in df.iterrows():
-        # x = (row[1] - min_x) / range_x * img_x  # normalise
-        # y = (row[2] - min_y) / range_y * img_y  # normalise
-    #     if 'Epithelia' in row[0]:
-    #         epi_norm.append([x, y])  # add to epithelia if epithelial
-    #     else:
-    #         other_norm.append([x, y])  # add to other otherwise
-    # # save as a dictionary with 2 elements
-    # output_dict = {'Epithelia': np.array(epi_norm), 'Other': np.array(other_norm)}
-    # return output_dict, ax
-
-
+        x = (row[1] - min_x) / range_x * img_x  # normalise
+        y = (row[2] - min_y) / range_y * img_y  # normalise
+        if 'Epithelia' in row[0]:
+            epi_norm.append([x, y])  # add to epithelia if epithelial
+        else:
+            other_norm.append([x, y])  # add to other otherwise
+    # save as a dictionary with 2 elements
+    output_dict = {'Epithelia': np.array(epi_norm), 'Other': np.array(other_norm)}
+    return output_dict, ax
 
 
 def draw_node(arr, ax, radius=0.01, color='red', alpha=0.5):
@@ -98,7 +104,7 @@ def point_dist(row_number, type_coords, th=0.05):
     """
     for 1 line of the xy coordinate matrix identify other coordinates within threshold Manhattan distance from the
     given point
-    :param row: one row of the coordinate list
+    :param row_number: index of one row of the coordinate list
     :param type_coords: coordinate array for one type of tisue that is of interest
     :param th: threshold withing which the search for points is done
     :return: coordinates of points close enough to the given row point
@@ -150,62 +156,84 @@ def centroids_to_graph(df, image, cell_type='Epithelia', th=2, alpha=0.5, radius
             ax.add_patch(edge)
 
 
-
 # do all for separate graph
-def lonely_graph(centroids_file, threshold, node_size=10, edge_width=0.5):
+def lonely_graph(centroids_file, g_threshold, g_node_size=10, g_edge_width=0.5):
+    """
+    Grpah without the image
+    :param centroids_file: QuPath output file for centorid detection
+    :param g_threshold: threshold for connecting nodes
+    :param g_node_size: node size
+    :param g_edge_width: width of the edges
+    :return: nothing. just shows the image and saves .gml for the graph and .png for the image
+    """
     tissue = 'Epithelia'
     print('***\nInitializing graph from the dataset')
-    data = pd.read_csv(os.path.join(BASE_DIR, centroids_file), sep='\t')
+    centroid_dataset = pd.read_csv(os.path.join(BASE_DIR, centroids_file), sep='\t')
     # dictionary of coordinates by tissue type
-    data_dict = normalise(data)
+    data_dict = normalise(centroid_dataset)
     # flip over the y coordinate
     data_dict[tissue][:, 1] = 1 - data_dict[tissue][:, 1]
     print('Coordinates imported and normalised')
     # create a dictionary with unique node label and its coordinates as keys and values
     pos = arr_to_dict(data_dict[tissue])
-    X = nx.Graph()  # generate an empty graph
-    X.add_nodes_from(pos.keys())  # add the nodes from the node dictionary
+    x = nx.Graph()  # generate an empty graph
+    x.add_nodes_from(pos.keys())  # add the nodes from the node dictionary
     print('Nodes added')
     # compute the nodes which are within threshold given the Manhattan distance
     for i in range(len(pos)):
-        edge = point_dist(i, data_dict[tissue], th=threshold)  # list of edges
-        X.add_edges_from(edge)  # edges added to the graph
+        edge = point_dist(i, data_dict[tissue], th=g_threshold)  # list of edges
+        x.add_edges_from(edge)  # edges added to the graph
     print('Edges added')
     fig = plt.figure()
     ax = fig.add_subplot(111)  # plot axes to be passed to the graph drawing function
-    ax.set_xlim(0, 1)  # normalise the coordinate system to [0, 1]
-    ax.set_ylim(0, 1)
-    nx.draw(X, pos=pos, ax=ax, node_size=10, width=edge_width)
-    nx.write_gml(X, os.path.join(BASE_DIR, '{}.gml'.format(centroids_file.split('.', 1)[0])))
+    ax.set_xlim(0, 1)  # normalise the x coordinate to [0, 1]
+    ax.set_ylim(0, 1)  # normalise the y coordinate to [0, 1]
+    nx.draw(x, pos=pos, ax=ax, node_size=g_node_size, width=g_edge_width)
+    nx.write_gml(x, os.path.join(BASE_DIR, '{}.gml'.format(centroids_file.split('.', 1)[0])))
     print('Done!\n***')
 
+
+def standardise_path(file_name):
+    return file_name.replace('\\', '/')
+
+
+def graph_and_image(centroids_file, image, threshold):
+    """
+    Overlay the graph on top of a patch
+    :param centroids_file: .txt with centroids and tissue type from QuPath
+    :param image: image in numpy array
+    :param threshold: limit for connection edges, has to be around 300 to make connections
+    :return:
+    """
+    tissue = 'Epithelia'
+    print('***\nInitializing graph from the dataset')
+    centroid_dataset = pd.read_csv(os.path.join(BASE_DIR, centroids_file), sep='\t')
+    # dictionary of coordinates by tissue type
+    data_dict, ax = normalise_to_img(centroid_dataset, image)
+    print('Coordinates imported and normalised')
+    # create a dictionary with unique node label and its coordinates as keys and values
+    pos = arr_to_dict(data_dict[tissue])
+    x = nx.Graph()  # generate an empty graph
+    x.add_nodes_from(pos.keys())  # add the nodes from the node dictionary
+    print('Nodes added')
+    # compute the nodes which are within threshold given the Manhattan distance
+    for i in range(len(pos)):
+        print('Starting edge calculations...')
+        edge = point_dist(i, data_dict[tissue], th=threshold)  # list of edges
+        print('**************\n', edge)
+        x.add_edges_from(edge)
+    nx.draw(x, pos=pos, ax=ax, node_size=5, node_color='b', alpha=0.8, width=0.3, edge_color='b')
+    plt.savefig(os.path.join(BASE_DIR, '{}'.format(centroids_file.split('.', 1)[0])), dpi=1000)
+
+
 # directory with the relevant files
-BASE_DIR = 'C:/Users/Shushan/Desktop/MSc/Master Thesis/Cell_graph'
-# BASE_DIR = 'M:/Cell Graph'
+# BASE_DIR = 'C:/Users/Shushan/Desktop/MSc/Master Thesis/Cell_graph'
+BASE_DIR = 'M:/Cell Graph'
 # file with the coordinates of the centroids extracted from QuPath
 FILE_NAME = 'polygons_patch.txt'
 IMG_FILE = 'B14.22816_J_HE.png'
 lonely_graph(FILE_NAME, 0.03)
 img = plt.imread(os.path.join(BASE_DIR, IMG_FILE))
 data = pd.read_csv(os.path.join(BASE_DIR, FILE_NAME), sep='\t')
-data_dict, ax = normalise_to_img(data, img)
-
-def graph_and_image(centroids_file, image, threshold):
-    tissue = 'Epithelia'
-    print('***\nInitializing graph from the dataset')
-    data = pd.read_csv(os.path.join(BASE_DIR, centroids_file), sep='\t')
-    # dictionary of coordinates by tissue type
-    data_dict, ax = normalise_to_img(data, image)
-    print('Coordinates imported and normalised')
-    # create a dictionary with unique node label and its coordinates as keys and values
-    pos = arr_to_dict(data_dict[tissue])
-    X = nx.Graph()  # generate an empty graph
-    X.add_nodes_from(pos.keys())  # add the nodes from the node dictionary
-    print('Nodes added')
-    # compute the nodes which are within threshold given the Manhattan distance
-    for i in range(len(pos)):
-        edge = point_dist(i, data_dict[tissue], th=threshold)  # list of edges
-        X.add_edges_from(edge)
-    nx.draw(X, pos=pos, ax=ax, node_size=10)
-
-graph_and_image(FILE_NAME, img, 0.03)
+# graph_and_image(FILE_NAME, img, 300)
+large_graph_file = standardise_path('M:\Cell Graph\polygons.gml')
