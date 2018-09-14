@@ -45,16 +45,17 @@ def normalise_to_img(df, img):
     ax = fig.add_subplot(111)
     img_x = ax.get_xlim()
     img_y = ax.get_ylim()
+    print(img_x, img_y)
     for i, row in df.iterrows():
-        x = (row[1] - min_x) / range_x * img_x  # normalise
-        y = (row[2] - min_y) / range_y * img_y  # normalise
-        if 'Epithelia' in row[0]:
-            epi_norm.append([x, y])  # add to epithelia if epithelial
-        else:
-            other_norm.append([x, y])  # add to other otherwise
-    # save as a dictionary with 2 elements
-    output_dict = {'Epithelia': np.array(epi_norm), 'Other': np.array(other_norm)}
-    return output_dict, ax
+        # x = (row[1] - min_x) / range_x * img_x  # normalise
+        # y = (row[2] - min_y) / range_y * img_y  # normalise
+    #     if 'Epithelia' in row[0]:
+    #         epi_norm.append([x, y])  # add to epithelia if epithelial
+    #     else:
+    #         other_norm.append([x, y])  # add to other otherwise
+    # # save as a dictionary with 2 elements
+    # output_dict = {'Epithelia': np.array(epi_norm), 'Other': np.array(other_norm)}
+    # return output_dict, ax
 
 
 
@@ -183,12 +184,28 @@ BASE_DIR = 'C:/Users/Shushan/Desktop/MSc/Master Thesis/Cell_graph'
 # BASE_DIR = 'M:/Cell Graph'
 # file with the coordinates of the centroids extracted from QuPath
 FILE_NAME = 'polygons_patch.txt'
+IMG_FILE = 'B14.22816_J_HE.png'
 lonely_graph(FILE_NAME, 0.03)
+img = plt.imread(os.path.join(BASE_DIR, IMG_FILE))
+data = pd.read_csv(os.path.join(BASE_DIR, FILE_NAME), sep='\t')
+data_dict, ax = normalise_to_img(data, img)
 
-def graph_and_image(centroids_file, image):
+def graph_and_image(centroids_file, image, threshold):
     tissue = 'Epithelia'
     print('***\nInitializing graph from the dataset')
     data = pd.read_csv(os.path.join(BASE_DIR, centroids_file), sep='\t')
     # dictionary of coordinates by tissue type
     data_dict, ax = normalise_to_img(data, image)
+    print('Coordinates imported and normalised')
+    # create a dictionary with unique node label and its coordinates as keys and values
+    pos = arr_to_dict(data_dict[tissue])
+    X = nx.Graph()  # generate an empty graph
+    X.add_nodes_from(pos.keys())  # add the nodes from the node dictionary
+    print('Nodes added')
+    # compute the nodes which are within threshold given the Manhattan distance
+    for i in range(len(pos)):
+        edge = point_dist(i, data_dict[tissue], th=threshold)  # list of edges
+        X.add_edges_from(edge)
+    nx.draw(X, pos=pos, ax=ax, node_size=10)
 
+graph_and_image(FILE_NAME, img, 0.03)
