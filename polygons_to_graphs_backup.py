@@ -230,10 +230,105 @@ def graph_and_image(centroids_file, image, threshold):
 # BASE_DIR = 'C:/Users/Shushan/Desktop/MSc/Master Thesis/Cell_graph'
 BASE_DIR = 'M:/Cell Graph'
 # file with the coordinates of the centroids extracted from QuPath
-FILE_NAME = 'polygons_patch.txt'
+FILE_NAME = 'polygons.txt'
 IMG_FILE = 'B14.22816_J_HE.png'
 lonely_graph(FILE_NAME, 0.03)
 img = plt.imread(os.path.join(BASE_DIR, IMG_FILE))
 data = pd.read_csv(os.path.join(BASE_DIR, FILE_NAME), sep='\t')
 # graph_and_image(FILE_NAME, img, 300)
 large_graph_file = standardise_path('M:\Cell Graph\polygons.gml')
+
+data_dictionary = normalise(data)
+centroids = data_dictionary['Epithelia']
+
+
+super_centroids = []
+x_centroids = centroids[:,0]
+y_centroids = centroids[:,1]
+grid_size = 0.1
+x_min = np.min(x_centroids)
+x_max = np.max(x_centroids)
+y_min = np.min(y_centroids)
+y_max = np.max(y_centroids)
+x_grid = np.arange(x_min, x_max, grid_size)
+y_grid = np.arange(y_min, y_max, grid_size)
+
+for x in x_grid:
+    for y in y_grid:
+        n = np.where(
+            (x<centroids[:,0]) &
+            (centroids[:, 0]<(x+grid_size)) &
+            (y < centroids[:, 1]) &
+            (centroids[:, 1] < (y + grid_size)))
+        if len(n[0])>3:
+            super_centroids.append((np.average(centroids[n[0]], axis=0)))
+
+super_centroids
+n_s_centr = np.array(super_centroids)
+super_dict = arr_to_dict(super_centroids)
+x = nx.Graph()
+x.add_nodes_from(super_dict.keys())
+for i in range(len(super_dict)):
+    edge = point_dist(i, n_s_centr, th=0.1)  # list of edges
+    x.add_edges_from(edge)  #
+fig = plt.figure()
+ax = fig.add_subplot(111)  # plot axes to be passed to the graph drawing function
+ax.set_xlim(0, 1)  # normalise the x coordinate to [0, 1]
+ax.set_ylim(0, 1)  # normalise the y coordinate to [0, 1]
+nx.draw(x, pos=super_dict, ax=ax)
+    nx.write_gml(x, os.path.join(BASE_DIR, 'test.gml'))
+
+
+def lonely_graph(super_pos, g_threshold, g_node_size=10, g_edge_width=0.5):
+
+    pos = arr_to_dict(super_pos)
+    x = nx.Graph()  # generate an empty graph
+    x.add_nodes_from(pos.keys())  # add the nodes from the node dictionary
+    print('Nodes added')
+    # compute the nodes which are within threshold given the Manhattan distance
+    for i in range(len(pos)):
+        edge = point_dist(i, pos, th=g_threshold)  # list of edges
+        x.add_edges_from(edge)  # edges added to the graph
+    print('Edges added')
+    fig = plt.figure()
+    ax = fig.add_subplot(111)  # plot axes to be passed to the graph drawing function
+    ax.set_xlim(0, 1)  # normalise the x coordinate to [0, 1]
+    ax.set_ylim(0, 1)  # normalise the y coordinate to [0, 1]
+    nx.draw(x, pos=pos, ax=ax, node_size=g_node_size, width=g_edge_width)
+    nx.write_gml(x, os.path.join(BASE_DIR, 'test.gml'))
+    print('Done!\n***')
+
+
+# xedges = list(np.arange(0,1, grid_size))
+# yedges = list(np.arange(0,1, grid_size))
+# H, xedge, yedge = np.histogram2d(x, y, bins=(xedges, yedges))
+# H=H.T
+# fig = plt.figure()
+# plt.imshow(H)
+#
+# super_nodes = []
+# mask = np.argwhere(H==3)
+# mask
+#
+# positive_x_bins = xedge[mask[:,0]]
+# positive_y_bins = yedge[mask[:,1]]
+# p_x = positive_x_bins[2]
+# p_y = positive_y_bins[2]
+#
+# p_x
+# p_y
+# pos_x_y = list(zip(positive_x_bins, positive_y_bins))
+# for x, y in pos_x_y:
+#     node_cluster = np.where((centroids[:,0]<x) & (x<centroids[:,0]+0.01)
+#             & (centroids[:,1]<y) & (y<centroids[:,1]+0.01))[0]
+#     average_cluster_coords = np.average(centroids[node_cluster], axis=0)
+#     super_nodes.append(average_cluster_coords)
+#
+#
+# coords = np.where((centroids[:,0]<p_x) & (p_x<centroids[:,0]+0.01)
+#             & (centroids[:,1]<p_y) & (p_y<centroids[:,1]+0.01))
+# centroids[coords]
+# coords
+# p_x
+# p_y
+
