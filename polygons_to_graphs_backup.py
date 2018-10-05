@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 #
 #
-def normalise(df):
+def normalise(df, normalisation_factor_x=1, normalisation_factor_y=1):
     """
     :param df: pandas df with the centroid coordinates in columns 1 and 2 and the cell type in column 0
     :return: a dictionary with tissue types as keys and normalised list of coordinates as values
@@ -24,8 +24,8 @@ def normalise(df):
     range_x = max_x - min_x  # range of x
     range_y = max_y - min_y  # range of y
     for i, row in df.iterrows():
-        x = (row[1] - min_x) / range_x  # normalise
-        y = (row[2] - min_y) / range_y  # normalise
+        x = (row[1] - min_x) / range_x *normalisation_factor_x  # normalise
+        y = (row[2] - min_y) / range_y *normalisation_factor_y  # normalise
         if 'Epithelia' in row[0]:
             epi_norm.append([x, y])  # add to epithelia if epithelial
         else:
