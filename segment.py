@@ -1,66 +1,112 @@
-from skimage import graph, data, io, segmentation, color
-from matplotlib import pyplot as plt
-from skimage.measure import regionprops
-from skimage import draw
+import cv2
+import os
+import matplotlib.pyplot as plt
 import numpy as np
-from skimage.future import graph
-from matplotlib import pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+from matplotlib import cm
+from matplotlib import colors
 
-def show_img(img):
-    width = 10.0
-    height = img.shape[0]*width/img.shape[1]
-    f = plt.figure(figsize=(width, height))
-    plt.imshow(img)
 
-img = data.coffee()
-show_img(img)
 
-labels = segmentation.slic(img, compactness=30, n_segments=400)
-labels = labels + 1  # So that no labelled region is 0 and ignored by regionprops
-regions = regionprops(labels)
-label_rgb = color.label2rgb(labels, img, kind='avg')
-show_img(label_rgb)
+BASE_DIR = 'C:/Users/st18l084/Dropbox/'
+FILE = 'nemo0.jpg'
+WSI = '366b_2.jpg'
+flags = [i for i in dir(cv2) if i.startswith('COLOR_BGR')]
+flags
+nemo = cv2.imread(os.path.join(BASE_DIR, WSI))
+nemo = cv2.cvtColor(nemo, cv2.COLOR_BGRA2RGB)
+plt.imshow(nemo)
 
-label_rgb = segmentation.mark_boundaries(label_rgb, labels, (0, 0, 0))
-show_img(label_rgb)
-rag = graph.rag_mean_color(img, labels)
-for region in regions:
-    rag.node[region['label']]['centroid'] = region['centroid']
+r, g, b = cv2.split(nemo)
+fig = plt.figure()
+axis = fig.add_subplot(1, 1, 1, projection="3d")
 
-def display_edges(image, g, threshold):
-    """Draw edges of a RAG on its image
+pixel_colors = nemo.reshape((np.shape(nemo)[0]*np.shape(nemo)[1], 3))
+norm = colors.Normalize(vmin=-1.,vmax=1.)
+norm.autoscale(pixel_colors)
+pixel_colors = norm(pixel_colors).tolist()
+axis.scatter(r.flatten(), g.flatten(), b.flatten(), facecolors=pixel_colors, marker=".")
 
-    Returns a modified image with the edges drawn.Edges are drawn in green
-    and nodes are drawn in yellow.
+hsv_nemo = cv2.cvtColor(nemo, cv2.COLOR_RGB2HSV)
+h, s, v = cv2.split(hsv_nemo)
+fig = plt.figure()
+axis = fig.add_subplot(1, 1, 1, projection="3d")
 
-    Parameters
-    ----------
-    image : ndarray
-        The image to be drawn on.
-    g : RAG
-        The Region Adjacency Graph.
-    threshold : float
-        Only edges in `g` below `threshold` are drawn.
+axis.scatter(h.flatten(), s.flatten(), v.flatten(), facecolors=pixel_colors, marker=".")
+axis.set_xlabel("Hue")
+axis.set_ylabel("Saturation")
+axis.set_zlabel("Value")
+plt.show()
+from matplotlib.colors import hsv_to_rgb
+center[:,0]
+x = center[:,0]
+x
+square = np.full((10, 10, 3), x, dtype=np.uint8) / 255.0
+plt.imshow(hsv_to_rgb(square))
+plt.show()
 
-    Returns:
-    out: ndarray
-        Image with the edges drawn.
-    """
-    image = image.copy()
-    for edge in g.edges_iter():
-        n1, n2 = edge
 
-        r1, c1 = map(int, rag.node[n1]['centroid'])
-        r2, c2 = map(int, rag.node[n2]['centroid'])
 
-        line  = draw.line(r1, c1, r2, c2)
-        circle = draw.circle(r1,c1,2)
 
-        if g[n1][n2]['weight'] < threshold :
-            image[line] = 0,1,0
-        image[circle] = 1,1,0
 
-    return image
 
-edges_drawn_all = display_edges(label_rgb, rag, np.inf )
-show_img(edges_drawn_all)
+
+light_orange = (1, 190, 200)
+dark_orange = (18, 255, 255)
+mask = cv2.inRange(hsv_nemo, light_orange, dark_orange)
+result = cv2.bitwise_and(nemo, nemo, mask)
+plt.subplot(1, 2, 1)
+plt.imshow(mask, cmap="gray")
+plt.subplot(1, 2, 2)
+plt.imshow(result)
+plt.show()
+from matplotlib.colors import hsv_to_rgb
+light_white = (0,0,200)
+dark_white = (145, 60, 255)
+mask_white = cv2.inRange(hsv_nemo, light_white, dark_white)
+results_white = cv2.bitwise_and(nemo, nemo, mask=mask_white)
+plt.subplot(1,2,1)
+plt.imshow(mask_white, cmap='gray')
+plt.subplot(1,2,2)
+plt.imshow(results_white, cmap='gray')
+final_mask = mask+mask_white
+final_result = cv2.bitwise_and(nemo, nemo, mask=final_mask)
+plt.subplot(1,2,1)
+plt.imshow(final_mask, cmap='Purples')
+plt.subplot(1,2,2)
+plt.imshow(final_result)
+plt.show()
+
+blur = cv2.GaussianBlur(final_result, (7,7), 0)
+plt.imshow(blur)
+
+#################################################################################
+# img = cv2.imread(os.path.join(BASE_DIR, WSI))
+img = nemo
+plt.imshow(img)
+Z = img.reshape((-1,3))
+
+# convert to np.float32
+Z = np.float32(Z)
+
+# define criteria, number of clusters(K) and apply kmeans()
+criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0)
+K = 3
+ret,label,center=cv2.kmeans(Z,K,None,criteria,20,cv2.KMEANS_RANDOM_CENTERS)
+
+# Now convert back into uint8, and make original image
+center = np.uint8(center)
+res = center[label.flatten()]
+res2 = res.reshape((img.shape))
+plt.imshow(label.reshape((img.shape[:2]))==1, cmap='gray')
+cv2.imshow('res2',res2)
+cv2.waitKey(0)
+cv2.destroyAllWindows()
+plt.subplot(1,3,1)
+plt.imshow()
+plt.subplot(1,3,2)
+plt.imshow(res2)
+plt.subplot(1,3,3)
+plt.imshow(res2)
+plt.subplot(1,3,4)
+plt.imshow(res2)

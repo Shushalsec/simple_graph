@@ -57,7 +57,6 @@ def normalise_to_img(df, img_patch):
     ax.axis('equal')
     img_x = ax.get_xlim()[1]
     img_y = ax.get_ylim()[0]
-    print(img_x, img_y)
     for i, row in df.iterrows():
         x = (row[1] - min_x) / range_x * img_x  # normalise
         y = (row[2] - min_y) / range_y * img_y  # normalise
@@ -67,6 +66,7 @@ def normalise_to_img(df, img_patch):
             other_norm.append([x, y])  # add to other otherwise
     # save as a dictionary with 2 elements
     output_dict = {'Epithelia': np.array(epi_norm), 'Other': np.array(other_norm)}
+    print('Data normalisation completed')
     return output_dict, ax
 
 # def draw_node(arr, ax, radius=0.01, color='red', alpha=0.5):
@@ -201,7 +201,7 @@ def standardise_path(file_name):
     return file_name.replace('\\', '/')
 
 
-def graph_and_image(centroids_file, image, threshold, show_centrality, tissue = 'Epithelia'):
+def graph_and_image(centroids_file, image, threshold, show_centrality=None, tissue = 'Epithelia'):
     """
     Overlay the graph on top of a patch
     :param show_centrality: True if want to add centrality to the plot
@@ -214,7 +214,7 @@ def graph_and_image(centroids_file, image, threshold, show_centrality, tissue = 
     centroid_dataset = pd.read_csv(os.path.join(BASE_DIR, centroids_file), sep='\t')
     # dictionary of coordinates by tissue type
     data_dict, ax = normalise_to_img(centroid_dataset, image)
-    print('Coordinates imported and normalised')
+    print('normalised...')
     # create a dictionary with unique node label and its coordinates as keys and values
     pos = arr_to_dict(data_dict[tissue])
     x = nx.Graph()  # generate an empty graph
@@ -226,13 +226,18 @@ def graph_and_image(centroids_file, image, threshold, show_centrality, tissue = 
         edge = point_dist(i, data_dict[tissue], th=threshold)  # list of edges
         print('**************\n', edge)
         x.add_edges_from(edge)
-    nx.draw(x, pos=pos, ax=ax, node_size=7, node_color='lime', alpha=0.8, width=0.8, edge_color='lime')
+    nx.draw(x, pos=pos, ax=ax, node_size=5, node_color='lime', alpha=1, width=0.8, edge_color='lime')
+
     if show_centrality:
         centrality_values = nx.algorithms.centrality.degree_centrality(x)
         values = [centrality_values.get(node, 0.25) for node in x.nodes()]
-        nx.draw(x, pos=pos, ax=ax, node_size=100, cmap=plt.get_cmap('Purples'), node_color=values)
+        nx.draw(x, pos=pos, ax=ax, node_size=20, alpha = 0.7, cmap=plt.get_cmap('Purples'), node_color=values)
+    else:
+        centrality_values = None
     plt.savefig(os.path.join(BASE_DIR, 'Graph and image {}'.format(centroids_file.split('.', 1)[0])), dpi=1000)
-    return (x, pos)
+    return (x, pos, centrality_values)
+
+
 
 # def hierarchical_graph(centoid_df_file, circle_radius, edge_width, grid_size=0.1, min_cluster_size=3, edge_threshold=0.1, circle_alpha=0.5):
 #     tissue = 'Epithelia'
@@ -324,30 +329,42 @@ def graph_and_image(centroids_file, image, threshold, show_centrality, tissue = 
 # directory with the relevant files
 # BASE_DIR = 'C:/Users/Shushan/Desktop/MSc/Master Thesis/Cell_graph/pres images/patch'
 # BASE_DIR = 'M:/Cell Graph/large_patch02'
-BASE_DIR = 'C:/Users/Shushan/Desktop/MSc/Master Thesis/Cell_graph/05'
+# BASE_DIR = 'C:/Users/Shushan/Desktop/MSc/Master Thesis/Cell_graph/05'
+BASE_DIR = 'C:/Users/st18l084/Dropbox/small_patch_03'
 
 # file with the coordinates of the centroids extracted from QuPath
-FILE_NAME = 'polygons_small_patch05.txt'
+FILE_NAME = 'polygons_small_patch03.txt'
 # IMG_FILE = 'supercells.png'
 # image file with the patch to be used for overlaying the graph
-IMG_FILE = 'patch_05.png'
+IMG_FILE = 'small_patch03.png'
 # lonely_graph(FILE_NAME, 0.03)
 # image as a numpy array
 img = plt.imread(os.path.join(BASE_DIR, IMG_FILE))
-# dataset of centroids with the cell types
-data = pd.read_excel(os.path.join(BASE_DIR, FILE_NAME))
 
 # graph_and_image(FILE_NAME, img, 300)
 # hierarchical_graph(FILE_NAME, circle_radius=10, edge_width=0.2, grid_size=0.1, min_cluster_size=100, edge_threshold = 0.1, circle_alpha=0.9)
 # hierarchical_graph_and_img(FILE_NAME, img, circle_radius=10, edge_width=0.2, grid_size=100, min_cluster_size=1000, edge_threshold = 0.1, circle_alpha=0.9)
-x1, pos1 = graph_and_image(FILE_NAME, img, 80, True, 'Epithelia')
+x1, pos1, centrality_values1 = graph_and_image(FILE_NAME, img, 40, False, 'Epithelia')
 # x2, pos2 = graph_and_image(FILE_NAME, img, 80, 'Other')
-fig = plt.figure()
-ax = fig.add_subplot(111)
 
-centrality_values = nx.algorithms.centrality.degree_centrality(x1)
-values = [centrality_values.get(node, 0.25) for node in x1.nodes()]
+def draw_supergraph(pos ,centrality_values, threshold_centrality):
+    pos_filtered = {k: v for k, v in pos.items() if centrality_values[k]>0.003}
+
+    values = [centrality_values.get(node) for node in x1.nodes()]
+    values_np = np.array(values)
+
+    thresholded_nodes = list(np.argwhere(values_np>threshold_centrality))
+    dense_nodes = [l[0] for l in thresholded_nodes]
+
+    dense_coords = {i : pos1[k] for i, k in enumerate(dense_nodes)}
+    x_dense = nx.Graph()
+    x_dense.add_nodes_from(dense_coords.keys())
+    nx.draw(x_dense, pos=dense_coords, node_size = 20, node_color = 'lime')
+    return x_dense
+
+supergraph = draw_supergraph(pos1, centrality_values1, 0.002)
+
+
+
+graph_and_image(FILE_NAME, img, 80)
 # nx.draw(x1, pos=pos1, ax=ax, node_size=7, alpha=0.8, width=0.8, edge_color='lime', cmap=plt.get_cmap('jet'), node_color=centrality_values.values())
-nx.draw(x1, pos=pos1, ax=ax, node_size=20, cmap=plt.get_cmap('Purples'), node_color=values)
-
-
