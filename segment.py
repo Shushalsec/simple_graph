@@ -19,7 +19,7 @@ import numpy as np
 
 def checkpoint(subdir):
     files = os.listdir(subdir)
-    if '-cropped' in files and '-mask' in files:
+    if [s for s in os.listdir(subdir) if '-cropped' in s] and [s for s in os.listdir(subdir) if '-mask' in s]:
         print('All images required are present!')
         return True
     else:
@@ -72,6 +72,5 @@ def one_crypt_extracter(subdirectory):
 
 
 dir1 = 'C:/Users/st18l084/Dropbox/colon crypt/images266a/masks'
-
 f = one_crypt_extracter(dir1)
 

@@ -6,32 +6,38 @@ import numpy as np
 import scipy.spatial.distance
 from matplotlib.patches import ConnectionPatch
 from scipy import stats
+import networkx as nx
 
-BASE_DIR = 'M:\Cell Graph'
-FILE_NAME = 'polygons.txt'
+BASE_DIR = 'C:/Users/st18l084/Dropbox'
+FILE_NAME = '366b.xlsx'
+IMG = '366a_ann.jpg'
 
 
 
 
-def normalise(df):
-    normalised_e = []
-    normlised_o = []
-    max_x = data.max(axis=0)[1]
-    max_y = data.max(axis=0)[2]
-    min_x = data.min(axis=0)[1]
-    min_y = data.min(axis=0)[2]
+
+
+def normalise(df, img_patch):
+    normalised = []
+    max_x = 20964.2
+    max_y = 33671.8
+    min_x = 720.66
+    min_y = 3267.5
     range_x = max_x - min_x
     range_y = max_y - min_y
-    for i, row in data.iterrows():
-        x = (row[1] - min_x) / (range_x)
-        y = (row[2] - min_y) / (range_y)
-        if 'Epithelia' in row[0]:
-            normalised_e.append([x, y])
-        else:
-            normlised_o.append([x, y])
-    data_dict = {'Epithelia': np.array(normalised_e),
-                 'Other': np.array(normlised_o)}
-    return data_dict
+    fig = plt.figure(frameon=False)
+    ax = fig.add_subplot(111)
+    ax.imshow(img_patch)
+    ax.axis('equal')
+    img_x = ax.get_xlim()[1]
+    img_y = ax.get_ylim()[0]
+    for i, row in df.iterrows():
+        x = (row[1] - min_x) / range_x * img_x  # normalise
+        y = (row[2] - min_y) / range_y * img_y  # normalise
+        normalised.append([x,y])
+    # save as a dictionary with 2 elements
+    print('Data normalisation completed')
+    return normalised, ax
 
 def add_node(arr, ax):
     for row in arr:
@@ -44,30 +50,22 @@ def add_node_to_img(arr, ax):
         ax.add_patch(node_circle)
 
 
-data = pd.read_csv(os.path.join(BASE_DIR, FILE_NAME), sep = '\t')
-data_dict = normalise(data)
+img = plt.imread(os.path.join(BASE_DIR, IMG))
+data = pd.read_excel(os.path.join(BASE_DIR, FILE_NAME))
 
-fig = plt.figure()
-ax = fig.add_subplot(111)
-ax.set_aspect('equal')
-add_node(data_dict['Epithelia'], ax)
-
-x = data_dict['Epithelia'][:,0]
-y = data_dict['Epithelia'][:,1]
-
-H, xedges, yedges = np.histogram2d(x,y, bins=100)
-H=H.T
-plt.imshow(H)
-np.histogram(H)
-np.max(H)
-r = stats.binned_statistic_2d(x, y, None, 'mean')
-
-
-img_file = 'B14.22816_J_HE.png'
-img = plt.imread(os.path.join(BASE_DIR, img_file))
-fig = plt.figure()
-ax = fig.add_subplot(111)
-ax.set_aspect('equal')
-ax.imshow(img)
-ax.set_aspect('equal')
-add_node_to_img(data_dict['Epithelia'], ax)
+centr, ax = normalise(data, img)
+G = nx.Graph()
+G.add_nodes_from([i for i in range(4)])
+d = scipy.spatial.distance.pdist(centr)
+D = scipy.spatial.distance.squareform(d)
+D[D==0.] = np.nan
+D
+edges = [(a, b) for a, b  in enumerate(np.nanargmin(D, axis = 1))]
+pos = {}
+for i in range(4):
+    pos[i] = centr[i]
+pos
+G.add_edges_from(edges)
+nx.draw(G, pos = pos, node_size = 100)
+G.nodes
+plt.savefig(os.path.join(BASE_DIR, 'graph'), bbox_inches = 'tight')
