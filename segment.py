@@ -1,5 +1,5 @@
 """
-Scripts 2: Metadater
+Scripts 2: cryptified
 
 This script allows the user to extract information about the crypts in the given images. It is assumed that the input
 is a directory with subdirectories each containing the cropped image region, an image with same magnification for the
@@ -9,7 +9,7 @@ This script requires that opencv be installed in the Python environment you are 
 
 This file should be imported as a module and contains the following function:
 
-    * crypt_data_extracter - returns features of the crypt
+    * crypt_data_extracter - returns features of the crypt - fraction that is crypt (at the moment)
 """
 import os
 import matplotlib.pyplot as plt
@@ -18,6 +18,11 @@ import numpy as np
 
 
 def checkpoint(subdir):
+    """
+    Check if the given subdirectory has all the required documents
+    :param subdir: path to the directory
+    :return: True or False
+    """
     files = os.listdir(subdir)
     if [s for s in os.listdir(subdir) if '-cropped' in s] and [s for s in os.listdir(subdir) if '-mask' in s]:
         print('All images required are present!')
@@ -29,7 +34,8 @@ def checkpoint(subdir):
 
 def one_crypt_extracter(subdirectory):
     """
-
+    Function to segment the image into crypt using simple color mask and output the fraction of pixels that are
+    classified as crypt out of the total pixels within the annotated region.
     :param subdirectory: subfolder containing only cropped image, its mask and .txt file
     :return: features of crypt - at the moment the fraction of pixels crypt-y (white) enough out of the pixels
     WITHIN the annotated region of the cropped image
