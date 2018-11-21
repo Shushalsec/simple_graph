@@ -71,12 +71,22 @@ def one_crypt_extracter(subdirectory):
     plt.subplot(1, 3, 3)
     plt.axis('off')
     plt.imshow(result)  # resulting crypt regions identified
-    plt.savefig(os.path.join(subdirectory, '5.segmentation.jpg'))
+    plt.savefig(os.path.join(subdirectory, '{}-segmentation.jpg'.format(subdirectory)))
     fraction_crypty = np.sum(result != 0)/np.sum(flower_copy != 0)
     print('This flower is ~{}% crypt!'.format(int(round(fraction_crypty*100))))
     return fraction_crypty
 
 
-dir1 = 'C:/Users/st18l084/Dropbox/colon crypt/images266a/masks'
-f = one_crypt_extracter(dir1)
+
+def crypt_percentage_all(all_dir):
+    os.chdir(os.path.join(all_dir, 'masks'))
+    for folder in os.listdir():
+        if os.path.isdir(folder):
+            print('Processing folder {}'.format(folder))
+            crypt_percentage = one_crypt_extracter(folder)
+            file_object = open(os.path.join(folder, '{}-crypt.txt'.format(folder)), 'w')
+            file_object.write(str(crypt_percentage))
+            file_object.close()
+
+
 
