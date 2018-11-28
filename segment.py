@@ -12,6 +12,7 @@ This file should be imported as a module and contains the following function:
     * crypt_data_extracter - returns features of the crypt - fraction that is crypt (at the moment)
 """
 import os
+
 import matplotlib.pyplot as plt
 import cv2
 import numpy as np
@@ -71,7 +72,9 @@ def one_crypt_extracter(subdirectory):
     plt.subplot(1, 3, 3)
     plt.axis('off')
     plt.imshow(result)  # resulting crypt regions identified
-    plt.savefig(os.path.join(subdirectory, '{}-segmentation.jpg'.format(subdirectory)))
+    print(subdirectory)
+    plt.savefig(os.path.join(subdirectory, '{}-segmentation.png'.format(subdirectory)))
+    print(os.path.join(subdirectory, '{}-segmentation.png'.format(subdirectory)))
     fraction_crypty = np.sum(result != 0)/np.sum(flower_copy != 0)
     print('This flower is ~{}% crypt!'.format(int(round(fraction_crypty*100))))
     return fraction_crypty
@@ -90,3 +93,6 @@ def crypt_percentage_all(all_dir):
 
 
 
+myfolder = 'M:/ged-shushan/ged-shushan/data/Letter/results'
+crypt_percentage_all(myfolder)
+one_crypt_extracter(os.path.join(myfolder, 'masks', '287c_B2004.12899_III-B_HE_0_abnormal'))

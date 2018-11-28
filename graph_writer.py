@@ -30,6 +30,6 @@ def graph_extracter(all_dir):
             float = ET.SubElement(attr, "float").text = "{}".format(nucleus_color)
             edge = ET.SubElement(graph, "edge", _from="_0", _to="_{}".format(node_id+1))
         tree = ET.ElementTree(root)
-        tree.write((os.path.join(masks_dir, folder, "{}-gland.xhtml".format(folder))))
-        tree.write((os.path.join(masks_dir, folder,"gland_{}.gxl".format(i))))
+        tree.write((os.path.join(masks_dir, folder, "{}-graph.xhtml".format(folder))))
+        tree.write((os.path.join(masks_dir, folder,"graph_{}.gxl".format(i))))
 

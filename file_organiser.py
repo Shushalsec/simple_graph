@@ -36,7 +36,7 @@ def organiser(directory_to_organise):
         # just in case one of the file types is missing
         print(identifier)
         try:
-            srcname_cropped = os.path.join(directory_to_organise, '{}-cropped.jpg'.format(identifier)) # source path
+            srcname_cropped = os.path.join(directory_to_organise, '{}-cropped.png'.format(identifier)) # source path
             srcname_mask = os.path.join(directory_to_organise, '{}-mask.png'.format(identifier)) # source path
             # srcname_features = os.path.join(directory_to_organise, '{}-features.xlsx'.format(identifier)) # source path
             dstname = os.path.join(directory_to_organise, identifier)  # destination folder
@@ -62,3 +62,7 @@ def final_organiser(all_folder):
         print(annotation)
         move_to = [s for s in folders if annotation in s][0]
         pd.DataFrame.to_excel(annotation_detections, os.path.join(masks_folder, move_to, '{}-detections.xlsx'.format(move_to)), index=False)
+
+myfolder = 'M:/ged-shushan/ged-shushan/data/Letter/results'
+
+final_organiser(myfolder)

@@ -2,8 +2,9 @@ import os
 import file_organiser
 import segment
 import graph_writer
+import CXLWriter
 
-myfolder = 'C:/Users/st18l084/Dropbox/colon crypt/results2'
+myfolder = 'M:/ged-shushan/ged-shushan/data/Letter/results'
 
 file_organiser.final_organiser(myfolder)
 segment.crypt_percentage_all(myfolder)
