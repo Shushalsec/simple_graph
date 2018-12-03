@@ -12,10 +12,10 @@ This file should be imported as a module and contains the following function:
     * crypt_data_extracter - returns features of the crypt - fraction that is crypt (at the moment)
 """
 import os
-
 import matplotlib.pyplot as plt
 import cv2
 import numpy as np
+from decorators import timer
 
 
 def checkpoint(subdir):
@@ -83,7 +83,7 @@ def one_crypt_extracter(subdirectory):
     print('This flower is ~{}% crypt!'.format(int(round(fraction_crypty*100))))
     return fraction_crypty
 
-
+@timer
 def crypt_percentage_all(all_dir):
     masks_dir = (os.path.join(all_dir, 'masks'))
     for folder in os.listdir(masks_dir):
@@ -93,5 +93,3 @@ def crypt_percentage_all(all_dir):
             file_object = open(os.path.join(folder_path, '{}-crypt.txt'.format(folder)), 'w')
             file_object.write(str(crypt_percentage))
             file_object.close()
-myfolder = 'M:/ged-shushan/ged-shushan/data/Letter/results'
-crypt_percentage_all(myfolder)
