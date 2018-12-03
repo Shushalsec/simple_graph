@@ -93,3 +93,5 @@ def crypt_percentage_all(all_dir):
             file_object = open(os.path.join(folder_path, '{}-crypt.txt'.format(folder)), 'w')
             file_object.write(str(crypt_percentage))
             file_object.close()
+myfolder = 'M:/ged-shushan/ged-shushan/data/Letter/results'
+crypt_percentage_all(myfolder)
