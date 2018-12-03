@@ -47,19 +47,22 @@ def one_crypt_extracter(subdirectory):
     for file in os.listdir(subdirectory):
         if '-cropped' in file:  # get the cropped image from the folder
             flower_file = os.path.join(subdirectory, file)  # get the path to the cropped image file
-            flower = plt.imread(flower_file)  # get the numpy array of the cropped image
+            flower = cv2.imread(flower_file)  # get the numpy array of the cropped image
         elif '-mask' in file:  # get the annotation mask in the folder
             flower_mask_file = os.path.join(subdirectory, file)  # get the path to the annotation mask image
             annotation_mask = plt.imread(flower_mask_file)  # get the mask as a numpy array
+
     bool_mask = annotation_mask.astype(bool)  # convert to boolean array from float array
     flower_copy = flower.copy()  # make a copy as the original is read only
     # set the values in the copied image as 0, i.e. black pixel if they are out of the annotation
     flower_copy[bool_mask == False] = 0.0
     # color mask to separate crypts
-    min_white = (180, 180, 180)
-    max_white = (250, 250, 250)
-    crypt_mask = cv2.inRange(flower_copy, min_white, max_white)
-    result = cv2.bitwise_and(flower_copy, flower_copy, mask=crypt_mask)
+    flower_hsv = cv2.cvtColor(flower_copy, cv2.COLOR_BGR2HSV)
+
+    min_white = (120, 0, 200)
+    max_white = (170, 60, 250)
+    mask = cv2.inRange(flower_hsv, min_white, max_white)
+    result = cv2.bitwise_and(flower_hsv, flower_hsv, mask=mask)
     # split the plot area into 3 columns and take the left pannel
     plt.subplot(1, 3, 1)
     plt.axis('off')
@@ -73,26 +76,54 @@ def one_crypt_extracter(subdirectory):
     plt.axis('off')
     plt.imshow(result)  # resulting crypt regions identified
     print(subdirectory)
-    plt.savefig(os.path.join(subdirectory, '{}-segmentation.png'.format(subdirectory)))
-    print(os.path.join(subdirectory, '{}-segmentation.png'.format(subdirectory)))
+    plt.savefig(os.path.join(subdirectory, 'test-segmentation.jpg'))
+    print(os.path.join(subdirectory, '{}-segmentation.jpg'.format(subdirectory)))
     fraction_crypty = np.sum(result != 0)/np.sum(flower_copy != 0)
     print('This flower is ~{}% crypt!'.format(int(round(fraction_crypty*100))))
     return fraction_crypty
 
-
+os.chdir('C:/')
 
 def crypt_percentage_all(all_dir):
-    os.chdir(os.path.join(all_dir, 'masks'))
-    for folder in os.listdir():
-        if os.path.isdir(folder):
-            print('Processing folder {}'.format(folder))
-            crypt_percentage = one_crypt_extracter(folder)
+    masks_dir = (os.path.join(all_dir, 'masks'))
+    for folder in os.listdir(masks_dir):
+        folder_path = os.path.join(masks_dir, folder)
+        if os.path.isdir(folder_path):
+            crypt_percentage = one_crypt_extracter(folder_path)
             file_object = open(os.path.join(folder, '{}-crypt.txt'.format(folder)), 'w')
             file_object.write(str(crypt_percentage))
             file_object.close()
 
 
 
-myfolder = 'M:/ged-shushan/ged-shushan/data/Letter/results'
-crypt_percentage_all(myfolder)
-one_crypt_extracter(os.path.join(myfolder, 'masks', '287c_B2004.12899_III-B_HE_0_abnormal'))
+subdirectory = 'C:/Users/shton/Dropbox/results/masks/287c_B2004.12899_III-B_HE_11_normal'
+
+crypt_percentage_all('C:/Users/shton/Dropbox/results')
+
+one_crypt_extracter(subdirectory)
+for file in os.listdir(subdirectory):
+    if '-cropped' in file:  # get the cropped image from the folder
+        flower_file = os.path.join(subdirectory, file)  # get the path to the cropped image file
+        flower = cv2.imread(flower_file)  # get the numpy array of the cropped image
+    elif '-mask' in file:  # get the annotation mask in the folder
+        flower_mask_file = os.path.join(subdirectory, file)  # get the path to the annotation mask image
+        annotation_mask = plt.imread(flower_mask_file)  # get the mask as a numpy array
+
+plt.imshow(flower)
+plt.show()
+
+bool_mask = annotation_mask.astype(bool)  # convert to boolean array from float array
+flower_copy = flower.copy()  # make a copy as the original is read only
+# set the values in the copied image as 0, i.e. black pixel if they are out of the annotation
+flower_copy[bool_mask == False] = 0.0
+
+flower_hsv = cv2.cvtColor(flower_copy, cv2.COLOR_BGR2HSV)
+
+min_white = (120, 0, 200)
+max_white = (170, 60, 250)
+mask = cv2.inRange(flower_hsv, min_white, max_white)
+result = cv2.bitwise_and(flower_hsv, flower_hsv, mask=mask)
+plt.imshow(result)
+plt.show()
+
+fraction_crypty = np.sum(result != 0)/np.sum(flower_copy != 0)
