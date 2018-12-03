@@ -56,15 +56,12 @@ def final_organiser(all_folder):
     detections = pd.read_csv(os.path.join(all_folder, 'detections.txt'), encoding='latin1', sep='\t')
 
     annotations = ['_'.join(file.split('_')[-2:]) for file in os.listdir(masks_folder)]
+
     folders = os.listdir(masks_folder)
     for annotation in annotations:
-        try:
-            annotation_detections = detections.loc[detections['Name'] == annotation]
-            print(annotation)
-            move_to = [s for s in folders if annotation in s][0]
-            pd.DataFrame.to_excel(annotation_detections, os.path.join(masks_folder, move_to, '{}-detections.xlsx'.format(move_to)), index=False)
-        except:
-            print(annotation, 'not moved!')
+        annotation_detections = detections.loc[detections['Name'] == annotation]
+        move_to = [s for s in folders if annotation == '_'.join(s.split('_')[-2:])][0]
+        pd.DataFrame.to_excel(annotation_detections, os.path.join(masks_folder, move_to, '{}-detections.xlsx'.format(move_to)), index=False)
 
 myfolder = 'M:/ged-shushan/ged-shushan/data/Letter/results'
 final_organiser(myfolder)
