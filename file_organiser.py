@@ -20,7 +20,7 @@ def organiser(directory_to_organise):
     image and (2) annotation mask png per flower/annotation
     :return: None
     """
-    files = os.listdir(directory_to_organise)  # list of files
+    files = [file_img for file_img in os.listdir(directory_to_organise) if ('.jpg' in file_img) or ('.png' in file_img)]  # list of image files
     delimiters = '-cropped|-features|-mask'  # file name suffixes to look for
     directory_names = [re.split(delimiters, file)[0] for file in files]  # list of file names with suffixes removed
     # double check that there are 3 of each corresponding to the (1) (2) and (3) files required
@@ -36,7 +36,7 @@ def organiser(directory_to_organise):
         # just in case one of the file types is missing
         print(identifier)
         try:
-            srcname_cropped = os.path.join(directory_to_organise, '{}-cropped.png'.format(identifier)) # source path
+            srcname_cropped = os.path.join(directory_to_organise, '{}-cropped.jpg'.format(identifier)) # source path
             srcname_mask = os.path.join(directory_to_organise, '{}-mask.png'.format(identifier)) # source path
             # srcname_features = os.path.join(directory_to_organise, '{}-features.xlsx'.format(identifier)) # source path
             dstname = os.path.join(directory_to_organise, identifier)  # destination folder
@@ -58,11 +58,13 @@ def final_organiser(all_folder):
     annotations = ['_'.join(file.split('_')[-2:]) for file in os.listdir(masks_folder)]
     folders = os.listdir(masks_folder)
     for annotation in annotations:
-        annotation_detections = detections.loc[detections['Name'] == annotation]
-        print(annotation)
-        move_to = [s for s in folders if annotation in s][0]
-        pd.DataFrame.to_excel(annotation_detections, os.path.join(masks_folder, move_to, '{}-detections.xlsx'.format(move_to)), index=False)
+        try:
+            annotation_detections = detections.loc[detections['Name'] == annotation]
+            print(annotation)
+            move_to = [s for s in folders if annotation in s][0]
+            pd.DataFrame.to_excel(annotation_detections, os.path.join(masks_folder, move_to, '{}-detections.xlsx'.format(move_to)), index=False)
+        except:
+            print(annotation, 'not moved!')
 
 myfolder = 'M:/ged-shushan/ged-shushan/data/Letter/results'
-
 final_organiser(myfolder)
