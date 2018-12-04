@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 import cv2
 import numpy as np
 from decorators import timer
-
+import pandas as pd
 
 def checkpoint(subdir):
     """
@@ -76,20 +76,32 @@ def one_crypt_extracter(subdirectory):
     plt.subplot(1, 3, 3)
     plt.axis('off')
     plt.imshow(result)  # resulting crypt regions identified
-    print(subdirectory)
     plt.savefig(os.path.join(subdirectory, 'test-segmentation.jpg'))
-    print(os.path.join(subdirectory, '{}-segmentation.jpg'.format(subdirectory)))
     fraction_crypty = np.sum(result != 0)/np.sum(flower_copy != 0)
-    print('This flower is ~{}% crypt!'.format(int(round(fraction_crypty*100))))
+    print('..and is ~{}% crypt!'.format(int(round(fraction_crypty*100))))
     return fraction_crypty
 
 @timer
 def crypt_percentage_all(all_dir):
     masks_dir = (os.path.join(all_dir, 'masks'))
+    ann_data = pd.read_csv(os.path.join(myfolder, 'annotations.txt'), encoding='latin1', sep='\t')
+    ann_data.set_index('Name', inplace = True)
+    for col in list(ann_data):
+        if 'Centroid X' in col:
+            x = col
+        elif 'Centroid Y' in col:
+            y = col
     for folder in os.listdir(masks_dir):
         folder_path = os.path.join(masks_dir, folder)
         if os.path.isdir(folder_path):
+            annotation = '_'.join(folder.split('_')[-2:])
+            crypt_x = ann_data.loc[annotation][x]
+            crypt_y = ann_data.loc[annotation][y]
+            print('This flower is centered at: ', crypt_x, crypt_y)
             crypt_percentage = one_crypt_extracter(folder_path)
             file_object = open(os.path.join(folder_path, '{}-crypt.txt'.format(folder)), 'w')
-            file_object.write(str(crypt_percentage))
+            file_object.write('{}\n'.format(str(crypt_percentage)))
+            file_object.write('{}\n'.format(str(crypt_x)))
+            file_object.write('{}\n'.format(str(crypt_y)))
             file_object.close()
+myfolder = 'M:/ged-shushan/ged-shushan/data/Letter/results'
