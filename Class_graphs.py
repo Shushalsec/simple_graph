@@ -12,7 +12,7 @@ class Attribute:
     def __str__(self):
         return 'attribute type: {} \nvalue: {}'.format(self.label, self.value)
 
-    def add_attr(self, node_object):
+    def add_to(self, node_object):
         # add attribute as a dictionary entry in the attr_dict attribute of a node object
         node_object.attr_dict[self.label] = self.value
 
@@ -48,25 +48,21 @@ class Edge:
 
 class Graph():
 
-    def __init__(self, _id, _class):
-        self._id = _id
+    def __init__(self, _class):
         self.nodes = []
         self.edges = []
         self._class = _class
-    def add_a_node(self, node_list):
+    def add_nodes(self, node_list):
         self.nodes = self.nodes + node_list
-    def add_nodes(self, node):
-        self.nodes.append(node)
-    def add_edge(self, edge):
-        self.edges = self.edges + edge
     def add_edges(self, edge_list):
-        self.edges.append(edge_list)
+        self.edges = self.edges + edge_list
 
 class XML(Graph):
     # create the XML tree
-    def __init__(self, root_tag = 'gxl', root_child_tag = 'graph'):
+    def __init__(self, dst_path, root_tag = 'gxl', root_child_tag = 'graph'):
+        self.dst_path = dst_path
         self.root = ET.Element("{}".format(root_tag))
-        self.graph = ET.SubElement(self.root, root_child_tag, edgeids="false", edgemode="undirected")
+        self.graph = ET.SubElement(self.root, root_child_tag, id='***', edgeids="false", edgemode="undirected")
 
     def one_node_writer(self, node_to_add):
         node = ET.SubElement(self.graph, "node", id="_{}".format(node_to_add._id))
@@ -80,16 +76,52 @@ class XML(Graph):
         else:
             edge = ET.SubElement(self.graph, "edge", _from="_{}".format(edge_to_add._from), _to="_{}".format(edge_to_add._to))
 
-    def XML_writer(self, dst_path, graph_id=0):
-        self.graph.set(id="graph_{}".format(graph_id))
-        for node in self.nodes:
+    def XML_writer(self, graph_id=0):
+        self.graph.set('id',"graph_{}".format(graph_id))
+        for node in self.Graph.nodes:
             XML.one_node_writer(self, node)
+        graph_shape = input('Should I get a star shaped graph? True/False')
+        for edge in self.Graph.edges:
+            XML.one_edge_writer(self, edge, star_shaped_graph=graph_shape)
         tree = ET.ElementTree(self.root)
-        tree.write((os.path.join(dst_path, "{}-graph.xhtml".format(graph_id))))  # for opening in a browser
-        tree.write((os.path.join(dst_path, "graph_{}.gxl".format(graph_id))))  # for using in GED software
+        tree.write((os.path.join(self.dst_path, "{}-graph.xhtml".format(graph_id))))  # for opening in a browser
+        tree.write((os.path.join(self.dst_path, "graph_{}.gxl".format(graph_id))))  # for using in GED software
 
+class GraphCollection():
+    def __init__(self, type):
+        self.type = type
+        self.dst
 
 mean_od = Attribute('mean OD', 10)
 mean_darkness = Attribute('darkness', 2)
 nano = Node(1, 0, 0, 0)
 
+mean_darkness.add_to(nano)
+mean_od.add_to(nano)
+nano.attr_dict
+
+mano = Node(1, 1)
+mean_od.add_to(mano)
+
+G = Graph('a')
+G.nodes
+G.add_nodes([nano, mano])
+e1 = Edge(mano, nano)
+
+G.add_edges([e1])
+
+first_xml = XML()
+first_xml.Graph = G
+first_xml.XML_writer('C:/Users/st18l084/Desktop')
+
+import xml.etree.ElementTree as ET
+parent = ET.Element("parentoo")
+attributes = {"id": "1", "index": "mehmeh"}
+child = ET.SubElement(parent, "childoo", attrib=attributes)
+child.set('did','2221')
+child.attrib
+
+g = []
+s = [10, 10]
+g = g+s
+g
