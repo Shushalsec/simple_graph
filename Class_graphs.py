@@ -3,20 +3,6 @@ import xml.etree.ElementTree as ET
 import shutil
 import pandas as pd
 
-class Attribute:
-    """
-    Class for node or edge attribute description
-    """
-    def __init__(self, label, value):
-        self.label = label  # the excel column header to include as node attribute
-        self.value = value  # numerical value of the attribute
-
-    def __str__(self):
-        return 'attribute type: {} \nvalue: {}'.format(self.label, self.value)
-
-    def add_to(self, node_object):
-        # add attribute as a dictionary entry in the attr_dict attribute of a node object
-        node_object.attr_dict[self.label] = self.value
 
 class Node:
     """Class for building a Node based on the node dictionary extracted from the image
@@ -24,24 +10,23 @@ class Node:
     units from the QuPath image data. The third argument is a dictionary of further attributes of the node.
     """
 
-    attr_dict = {}  # dictionary with attribute type as the unique key and the value as the well.. the value of it
 
-    def __init__(self, _id, type, save_type = True, x=0, y=0):
+    def __init__(self, _id, type, attr_dict, x=0, y=0):
         self._id = _id  # node _id
         # save the node type if needed
-        if save_type:
-            self.attr_dict['type'] = type  # type of the node - central or peripheral
+        self.attr_dict = attr_dict
+        self.attr_dict['type'] = type  # type of the node - central or peripheral
         self.x = x  # node x coordinate of the cell centroid
         self.y = y  # node y coordinate of the cell centroid
 
 
     def __str__(self):
-        return(' Node number {} with attribute set {}'.format(self._id, self.attr_dict))
+        return(' Node number {} at {}, {} with attribute set {}'.format(self._id, self.x, self.y, self.attr_dict))
 
 
 class Edge:
-    attr_dict = {}
-    def __init__(self, node1, node2): #  to define an edge it is required to enter the nodes to be linked
+    def __init__(self, node1, node2, attr_dict={}): #  to define an edge it is required to enter the nodes to be linked
+        self.attr_dict = attr_dict
         self._from = node1._id  # NB the underscore before the attribute name
         self._to = node2._id
 
@@ -63,33 +48,24 @@ class Graph():
     def add_edges(self, edge_list):
         self.edges = self.edges + edge_list
 
-    def create_nodes_from_folder(self, attrib_key_list):
-        cells = pd.read_excel(os.path.join(self.graph_dir, self.graph_dir.split('/')[-1]+'-detections.xlsx'))
+    def create_nodes_from_folder(self):
+        crypt_file_path = (os.path.join(self.graph_dir, self.graph_dir.split('/')[-1]+'-crypt.txt'))
+        crypt_file = pd.read_csv(crypt_file_path, header = None)
+        cryptiness_attr = {'whiteness' : crypt_file.iloc[0][0]}
+        crypt_x = crypt_file.iloc[1][0]
+        crypt_y = crypt_file.iloc[2][0]
+        central_node = Node(0, 0, cryptiness_attr, x=crypt_x, y=crypt_y)
+        node_list_to_add = [central_node]
+        cells = pd.read_excel(os.path.join(self.graph_dir, self.graph_dir.split('/')[-1]+'-detections.xlsx'))[:3]
         attrib_options = {k + 1: v for (k, v) in zip(range(len(list(cells)[3:])), list(cells)[3:])}
-        print(attrib_options)
-        node_list_to_add = []
+        for row, cell in cells.iterrows():
+            node_attribute_dict = {attrib_options[n]: cell[attrib_options[n]] for n in self.attrib_types_list}
+            current_node = Node(row + 1, 1, node_attribute_dict, x=cell[attrib_options[1]], y=cell[attrib_options[2]])
+            node_list_to_add = node_list_to_add + [current_node]
         # get the crypt data
-        # crypt_file_path = (os.path.join(self.graph_dir, self.graph_dir.split('/')[-1]+'-crypt.txt'))
-        # crypt_file = pd.read_csv(crypt_file_path, header = None)
-        # cryptiness = crypt_file.iloc[0][0]
-        # print('CP1', cryptiness)
-        # crypt_x = crypt_file.iloc[1][0]
-        # crypt_y = crypt_file.iloc[2][0]
-        # central_node_attr = Attribute('whiteness', cryptiness)
-        # central_node = Node(0, 0, x=crypt_x, y=crypt_y)
+
         # central_node_attr.add_to(central_node)
         # node_list_to_add.append(central_node)
-        print(len(node_list_to_add))
-        for row, cell in cells.iterrows():
-            print(row+1)
-            current_node = Node(row+1, 1, x=cell[attrib_options[1]], y=cell[attrib_options[2]])
-            for n in attrib_key_list:
-                print(cell[attrib_options[n]])
-                node_attribute = Attribute(attrib_options[n], cell[attrib_options[n]])
-                node_attribute.add_to(current_node)
-            print(current_node.attr_dict)
-            node_list_to_add.append(current_node)
-            print(node_list_to_add[-1].attr_dict)
         return node_list_to_add
 
     def create_edges_given_nodes(self, node_list):
@@ -100,43 +76,21 @@ class Graph():
         return edge_list_to_add
 
     def self_assemble(self):
-        node_list = self.create_nodes_from_folder(self.attrib_types_list)
-        print(node_list[-1].attr_dict, node_list[-2].attr_dict)
-        edge_list = self.create_edges_given_nodes(node_list)
-        self.add_nodes(node_list)
+        node_list_new = self.create_nodes_from_folder()
+        edge_list = self.create_edges_given_nodes(node_list_new)
+        self.add_nodes(node_list_new)
         self.add_edges(edge_list)
         print('Graph successfuly self-assembled!')
 
+if __name__ == '__main__':
+    fold = 'M:/ged-shushan/ged-shushan/data/Letter/results/masks/287c_B2004.12899_III-B_HE_0_normal'
 
-fold = 'M:/ged-shushan/ged-shushan/data/Letter/results/masks/287c_B2004.12899_III-B_HE_0_normal'
-
-a = Graph('norm', fold, [3, 4])
-a.self_assemble()
-# cells = pd.read_excel(os.path.join(fold, fold.split('/')[-1]+ '-detections.xlsx'))
-# attrib_options = {k + 1: v for (k, v) in zip(range(len(list(cells)[3:])), list(cells)[3:])}
-# node_list_to_add = []
-# attrib_key_list = [3, 4]
-# for row, cell in cells.iterrows():
-#     node = Node(row+1, 1, x=cell[attrib_options[1]], y=cell[attrib_options[2]])
-#     for n in attrib_key_list:
-#         node_attribute = Attribute(attrib_options[n], cell[attrib_options[n]])
-#         node.attr_dict[node_attribute.label] = node_attribute.value
-#     node_list_to_add.append(node)
-#
-# crypt_file_path = (os.path.join(fold, fold.split('/')[-1] + '-crypt.txt'))
-# crypt_file = pd.read_csv(crypt_file_path, header=None)
-# cryptiness = crypt_file.iloc[0][0]
-# crypt_x = crypt_file.iloc[1][0]
-# crypt_y = crypt_file.iloc[2][0]
-# node = Node(0, 0, x=crypt_x, y=crypt_y)
-# node.attr_dict['whiteness'] = cryptiness
-
-
-
-
-
-
-
+    a = Graph('norm', fold, [3, 4])
+    a.self_assemble()
+    print(a.nodes[0])
+    print(a.nodes[1])
+    print(a.nodes[2])
+    print(a.edges[0])
 
 
 
