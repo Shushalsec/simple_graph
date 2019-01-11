@@ -19,9 +19,8 @@ class Node:
         self.x = x  # node x coordinate of the cell centroid
         self.y = y  # node y coordinate of the cell centroid
 
-
     def __str__(self):
-        return(' Node number {} at {}, {} with attribute set {}'.format(self._id, self.x, self.y, self.attr_dict))
+        return' Node number {} at {}, {} with attribute set {}'.format(self._id, self.x, self.y, self.attr_dict)
 
 
 class Edge:
@@ -31,7 +30,8 @@ class Edge:
         self._to = node2._id
 
     def __str__(self):
-        return(' Edge between nodes {} and {} with attribute set {}'.format(self._from, self._to, self.attr_dict))
+        return' Edge between nodes {} and {} with attribute set {}'.format(self._from, self._to, self.attr_dict)
+
 
 class Graph():
 
@@ -49,57 +49,50 @@ class Graph():
         self.edges = self.edges + edge_list
 
     def create_nodes_from_folder(self):
-        crypt_file_path = (os.path.join(self.graph_dir, self.graph_dir.split('/')[-1]+'-crypt.txt'))
-        crypt_file = pd.read_csv(crypt_file_path, header = None)
-        cryptiness_attr = {'whiteness' : crypt_file.iloc[0][0]}
+        fold_name = os.path.basename(os.path.normpath(self.graph_dir))
+        crypt_file_path = (os.path.join(self.graph_dir, fold_name+'-crypt.txt'))
+        crypt_file = pd.read_csv(crypt_file_path, header=None)
+        cryptiness_attr = {'whiteness': crypt_file.iloc[0][0]}
         crypt_x = crypt_file.iloc[1][0]
         crypt_y = crypt_file.iloc[2][0]
         central_node = Node(0, 0, cryptiness_attr, x=crypt_x, y=crypt_y)
         node_list_to_add = [central_node]
-        cells = pd.read_excel(os.path.join(self.graph_dir, self.graph_dir.split('/')[-1]+'-detections.xlsx'))[:3]
+        cells = pd.read_excel(os.path.join(self.graph_dir, fold_name+'-detections.xlsx'))[:3]
         attrib_options = {k + 1: v for (k, v) in zip(range(len(list(cells)[3:])), list(cells)[3:])}
+
         for row, cell in cells.iterrows():
             node_attribute_dict = {attrib_options[n]: cell[attrib_options[n]] for n in self.attrib_types_list}
             current_node = Node(row + 1, 1, node_attribute_dict, x=cell[attrib_options[1]], y=cell[attrib_options[2]])
             node_list_to_add = node_list_to_add + [current_node]
-        # get the crypt data
-
-        # central_node_attr.add_to(central_node)
-        # node_list_to_add.append(central_node)
         return node_list_to_add
 
-    def create_edges_given_nodes(self, node_list):
+    def create_edges_given_nodes(self):
         edge_list_to_add = []
-        for node in node_list[1:]:
-            another_edge = Edge(node_list[0], node)
+        for node in self.nodes[1:]:
+            another_edge = Edge(self.nodes[0], node)
             edge_list_to_add.append(another_edge)
         return edge_list_to_add
 
     def self_assemble(self):
         node_list_new = self.create_nodes_from_folder()
-        edge_list = self.create_edges_given_nodes(node_list_new)
         self.add_nodes(node_list_new)
+        edge_list = self.create_edges_given_nodes()
         self.add_edges(edge_list)
         print('Graph successfuly self-assembled!')
 
-if __name__ == '__main__':
-    fold = 'M:/ged-shushan/ged-shushan/data/Letter/results/masks/287c_B2004.12899_III-B_HE_0_normal'
 
-    a = Graph('norm', fold, [3, 4])
-    a.self_assemble()
-    print(a.nodes[0])
-    print(a.nodes[1])
-    print(a.nodes[2])
-    print(a.edges[0])
-
-
-
-class XML(Graph):
+class XML():
     # create the XML tree
-    def __init__(self, dst_path, root_tag = 'gxl', root_child_tag = 'graph'):
+    def __init__(self, graph_object, dst_path, graph_id=0, root_tag = 'gxl', root_child_tag = 'graph'):
+        """
+
+        :type graph_object: Graph
+        """
+        self.graph_object = graph_object
         self.dst_path = dst_path
+        self.graph_id = graph_id
         self.root = ET.Element("{}".format(root_tag))
-        self.graph = ET.SubElement(self.root, root_child_tag, id='***', edgeids="false", edgemode="undirected")
+        self.graph = ET.SubElement(self.root, root_child_tag, id=str(graph_id), edgeids="false", edgemode="undirected")
 
     def one_node_writer(self, node_to_add):
         node = ET.SubElement(self.graph, "node", id="_{}".format(node_to_add._id))
@@ -113,18 +106,15 @@ class XML(Graph):
         else:
             edge = ET.SubElement(self.graph, "edge", _from="_{}".format(edge_to_add._from), _to="_{}".format(edge_to_add._to))
 
-    def XML_writer(self, graph_id=0):
-        self.graph.set('id',"graph_{}".format(graph_id))
-        for node in self.Graph.nodes:
+    def XML_writer(self):
+        # self.graph.set('id',"graph_{}".format(graph_id))
+        for node in self.graph_object.nodes:
             XML.one_node_writer(self, node)
-        graph_shape = input('Should I get a star shaped graph? True/False')
-        for edge in self.Graph.edges:
-            XML.one_edge_writer(self, edge, star_shaped_graph=graph_shape)
+        for edge in self.graph_object.edges:
+            XML.one_edge_writer(self, edge, star_shaped_graph=True)
         tree = ET.ElementTree(self.root)
-        tree.write((os.path.join(self.dst_path, "{}-graph.xhtml".format(graph_id))))  # for opening in a browser
-        tree.write((os.path.join(self.dst_path, "graph_{}.gxl".format(graph_id))))  # for using in GED software
-
-
+        tree.write((os.path.join(self.dst_path, "{}-graph.xhtml".format(self.graph_id))))  # for opening in a browser
+        tree.write((os.path.join(self.dst_path, "graph_{}.gxl".format(self.graph_id))))  # for using in GED software
 
 def addCXLs(all_dir, class_dict):
     """
@@ -167,6 +157,7 @@ def addCXLs(all_dir, class_dict):
             data_dict['validation.cxl'].append(file)
             test_switch = True
     # inner function for creating the .cxl files when given the name of the dataset
+
     def createCXL(cxl_to_create):
         root = ET.Element('GraphCollection')  # xml root
         fingerprints = ET.SubElement(root, 'fingerprints')  # xml child
@@ -183,3 +174,32 @@ def addCXLs(all_dir, class_dict):
     createCXL('train.cxl')
     createCXL('validation.cxl')
 
+
+# if __name__ == '__main__':
+myfolder = 'M:/ged-shushan/ged-shushan/data/Letter/results'
+masks = os.path.join(myfolder, 'masks')
+# fold = 'M:/ged-shushan/ged-shushan/data/Letter/results/masks/287c_B2004.12899_III-B_HE_0_normal'
+fold = os.path.join(myfolder, 'masks', os.listdir(masks)[0]) # fetch the first folder path
+fold_name = os.path.basename(os.path.normpath(fold))
+
+cells = pd.read_excel(os.path.join(fold, fold_name + '-detections.xlsx'))[:3]
+attrib_options = {k + 1: v for (k, v) in zip(range(len(list(cells)[3:])), list(cells)[3:])}
+print(attrib_options)
+key_list=[]
+str_list = input(
+   'Time to choose the node attributes. Enter comma separated number keys of the attributes to be included\n')
+try:
+    key_list = [int(l) for l in str_list.replace(' ', '').split(',')]
+except:
+    print('Something went wrong with your input!')
+
+class_dict = {}
+for folder in os.listdir(masks):
+    print(os.path.join(masks,folder))
+    graph_class = folder.split('_')[-1]
+    i = folder.split('_')[-2]
+    another_graph = Graph(graph_class, os.path.join(masks, folder), key_list)
+    another_graph.self_assemble()
+    a_XML = XML(another_graph, os.path.join(masks, folder), graph_id=i)
+    a_XML.XML_writer()
+    class_dict[i] = graph_class
