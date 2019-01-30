@@ -1,16 +1,32 @@
-import pandas as pd
-import os
-from matplotlib.patches import Circle
-import matplotlib.pyplot as plt
-import numpy as np
-from matplotlib.patches import ConnectionPatch
+class FirstClass:
+    def setdata(self, value):
+        self.data = value
+    def display(self):
+        print(self.data)
+
+class SecondClass(FirstClass):
+    def display(self):
+        print('bla bla bla')
+
+class ThirdClass(SecondClass):
+    def __init__(self, value):
+        self.data = value
+    def __add__(self, other):
+        return ThirdClass(self.data + other)
+    def __str__(self):
+        return('[ThirdClass: {} ]'.format(self.data))
+    def mul(self, other):
+        self.data *= other
 
 
-image_file: str = 'fml.png'
-img = plt.imread(os.path.join(BASE_DIR, image_file))
+a = ThirdClass('abc')
 
-fig = plt.figure()  # construct a figure
-ax = fig.add_subplot(111)  # get the axis
-ax.imshow(img)
-edge = ConnectionPatch((0.1, 0.1), (ax.get_xlim()[1], ax.get_ylim()[0]), coordsA='data', color='red')
-ax.add_patch(edge)
+a.display()
+
+print(a)
+
+b = a + 'def'
+
+a.mul(3)
+print(a)
+ThirdClass.__bases__

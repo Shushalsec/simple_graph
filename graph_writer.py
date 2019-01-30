@@ -74,7 +74,7 @@ def graph_extracter(all_dir):
             node = ET.SubElement(graph, "node", id="_{}".format(node_id+1))
             # define the first attribute
             attr = ET.SubElement(node, "attr", name="x")
-            # set it to to 1 as this is a node corresponding to a cell in the gland
+            # set it to 1 as this is a node corresponding to a cell in the gland
             _float = ET.SubElement(attr, "float").text = "{}".format(cell_attribute_1[node_id])
             # define the second attribute
             attr = ET.SubElement(node, "attr", name="y")

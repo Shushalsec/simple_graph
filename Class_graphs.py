@@ -87,7 +87,6 @@ class Graph():
         self.add_nodes(node_list_new)
         edge_list = self.create_edges_given_nodes()
         self.add_edges(edge_list)
-        print('Graph successfuly self-assembled!')
 
 
 class XML():
@@ -202,9 +201,9 @@ def addCXLs(all_dir, class_dict):
     createCXL('validation.cxl')
 
 
-if __name__ == '__main__':
+def assemble_data(myfolder):
 
-    myfolder = 'M:/ged-shushan/ged-shushan/data/Letter/results'
+    # myfolder = 'M:/ged-shushan/ged-shushan/data/Letter/results'
 
     masks = os.path.join(myfolder, 'masks')
     fold = os.path.join(myfolder, 'masks', os.listdir(masks)[0]) # fetch the first folder path
@@ -218,14 +217,16 @@ if __name__ == '__main__':
     try:
         key_list = [int(l) for l in str_list.replace(' ', '').split(',')]
     except:
-        print('Something went wrong with your input!')
-        for subdirectory in os.listdir(masks):
-            graph_dir = os.path.join(masks, subdirectory)
-            one_graph = Graph(graph_dir, key_list)
-            one_graph.self_assemble()
-            i = subdirectory.split('_')[-2]
-            one_XML = XML(one_graph, graph_dir, graph_id=i)
-            one_XML.XML_writer()
+        print('Something went wrong with your input. Only x, y coordinates selected as attributes')
+        key_list = [1, 2]
+    for subdirectory in os.listdir(masks):
+        graph_dir = os.path.join(masks, subdirectory)
+        one_graph = Graph(graph_dir, key_list)
+        one_graph.self_assemble()
+        i = subdirectory.split('_')[-2]
+        one_XML = XML(one_graph, graph_dir, graph_id=i)
+        one_XML.XML_writer()
 
     myclassdict = create_class_dict(myfolder)
     addCXLs(myfolder, myclassdict)
+

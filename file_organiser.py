@@ -63,5 +63,3 @@ def final_organiser(all_folder):
         move_to = [s for s in folders if annotation == '_'.join(s.split('_')[-2:])][0]
         pd.DataFrame.to_excel(annotation_detections, os.path.join(masks_folder, move_to, '{}-detections.xlsx'.format(move_to)), index=False)
 
-myfolder = 'M:/ged-shushan/ged-shushan/data/Letter/results'
-final_organiser(myfolder)
