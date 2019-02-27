@@ -57,15 +57,18 @@ class Graph():
         # add edges given as a list
         self.edges = self.edges + edge_list
 
-    def create_nodes_from_folder(self):
+    def create_nodes_from_folder(self, crypt_node=False):
         fold_name = os.path.basename(os.path.normpath(self.graph_dir))  # get the last directory in the path
-        crypt_file_path = (os.path.join(self.graph_dir, fold_name+'-crypt.txt'))  # text file path
-        crypt_file = pd.read_csv(crypt_file_path, header=None)  # txt file to pandas dataframe
-        cryptiness_attr = {'whiteness': crypt_file.iloc[0][0]}  # percentage that is crypt based on segment.py data
-        crypt_x = crypt_file.iloc[1][0]  # crypt centroid
-        crypt_y = crypt_file.iloc[2][0]
-        central_node = Node(0, 0, cryptiness_attr, x=crypt_x, y=crypt_y)
-        node_list_to_add = [central_node]
+        if crypt_node:
+            crypt_file_path = (os.path.join(self.graph_dir, fold_name+'-crypt.txt'))  # text file path
+            crypt_file = pd.read_csv(crypt_file_path, header=None)  # txt file to pandas dataframe
+            cryptiness_attr = {'whiteness': crypt_file.iloc[0][0]}  # percentage that is crypt based on segment.py data
+            crypt_x = crypt_file.iloc[1][0]  # crypt centroid
+            crypt_y = crypt_file.iloc[2][0]
+            central_node = Node(0, 0, cryptiness_attr, x=crypt_x, y=crypt_y)
+            node_list_to_add = [central_node]
+        else:
+            node_list_to_add = []
         cells = pd.read_excel(os.path.join(self.graph_dir, fold_name+'-detections.xlsx'))[:3]
         attrib_options = {k + 1: v for (k, v) in zip(range(len(list(cells)[3:])), list(cells)[3:])}
 
@@ -104,7 +107,7 @@ class XML():
 
     def one_node_writer(self, node_to_add):
         node = ET.SubElement(self.graph, "node", id="_{}".format(node_to_add._id))
-        for feature in node_to_add.attr_dict.keys():
+        for feature in enumerate(node_to_add.attr_dict.keys()):
             attr_x = ET.SubElement(node, "attr", name=feature)
             _float = ET.SubElement(attr_x, "float").text = str(node_to_add.attr_dict[feature])
 
@@ -212,8 +215,7 @@ def assemble_data(myfolder):
     attrib_options = {k + 1: v for (k, v) in zip(range(len(list(cells)[3:])), list(cells)[3:])}
     print(attrib_options)
     key_list=[]
-    str_list = input(
-       'Time to choose the node attributes. Enter comma separated number keys of the attributes to be included\n')
+    str_list = input('Time to choose the node attributes. Enter comma separated number keys of the attributes to be included\n')
     try:
         key_list = [int(l) for l in str_list.replace(' ', '').split(',')]
     except:

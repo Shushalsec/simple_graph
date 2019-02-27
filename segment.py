@@ -84,7 +84,7 @@ def one_crypt_extracter(subdirectory):
 @timer
 def crypt_percentage_all(all_dir):
     masks_dir = (os.path.join(all_dir, 'masks'))
-    ann_data = pd.read_csv(os.path.join(myfolder, 'annotations.txt'), encoding='latin1', sep='\t')
+    ann_data = pd.read_csv(os.path.join(all_dir, 'annotations.txt'), encoding='latin1', sep='\t')
     ann_data.set_index('Name', inplace = True)
     for col in list(ann_data):
         if 'Centroid X' in col:
@@ -104,4 +104,5 @@ def crypt_percentage_all(all_dir):
             file_object.write('{}\n'.format(str(crypt_x)))
             file_object.write('{}\n'.format(str(crypt_y)))
             file_object.close()
-myfolder = 'M:/ged-shushan/ged-shushan/data/Letter/results'
+
+#myfolder = 'M:/ged-shushan/ged-shushan/data/Letter/results'
