@@ -9,9 +9,10 @@ class Node:
     The first and the second arguments are fro the node coordinates and should be given in normalised image
     units from the QuPath image data. The third argument is a dictionary of further attributes of the node.
     """
+    identifier: int
 
-    def __init__(self, _id, node_type, attr_dict, x=0, y=0):
-        self._id = _id  # node _id
+    def __init__(self, identifier, node_type, attr_dict, x=0, y=0):
+        self.identifier = identifier  # node _id
         # save the node type if needed
         self.attr_dict = attr_dict
         self.attr_dict['type'] = node_type  # type of the node - central or peripheral
@@ -19,35 +20,37 @@ class Node:
         self.y = y  # node y coordinate of the cell centroid
 
     def __str__(self):
-        return' Node number {} at {}, {} with attribute set {}'.format(self._id, self.x, self.y, self.attr_dict)
+        return' Node number {} at {}, {} with attribute set {}'.format(self.identifier, self.x, self.y, self.attr_dict)
 
 
 class Edge:
-    def __init__(self, node1, node2, attr_dict={}):  # to define an edge it is required to enter the nodes to be linked
+    def __init__(self, node1, node2, attr_dict):  # to define an edge it is required to enter the nodes to be linked
         self.attr_dict = attr_dict
-        self._from = node1._id  # NB the underscore before the attribute name
-        self._to = node2._id
+        self._from = node1.identifier  # NB the underscore before the attribute name, not a protected member
+        self._to = node2.identifier
 
     def __str__(self):
         return' Edge between nodes {} and {} with attribute set {}'.format(self._from, self._to, self.attr_dict)
 
 
-class Graph():
-    '''
+class Graph:
+    """
     Graph class to generate graphs from input data or based on pre-existing folder files with relevant QuPath data.
-    '''
+    """
 
     def __init__(self, graph_dir, attrib_types_list):
-        '''
-        :param _class: graph class - normal or abnormal
+        """
+
         :param graph_dir: individual folder within masks folder with the excel export, txt file for segmentation
         :param attrib_types_list: list of numbers that indicate the key for the selected parameter (value)
-        '''
+        """
+
         self.nodes = []  # node objects are kept in a list
         self.edges = []  # edge objects are kept in a list
         # self._class = _class  # graph class to be extracted in advance from the folder name
         self.graph_dir = graph_dir  # path to the directory
         self.attrib_types_list = attrib_types_list  # excel column to take as attribute
+        # self.edge_funct = edge_funct
 
     def add_nodes(self, node_list):
         # add nodes that are given as a list
@@ -69,20 +72,31 @@ class Graph():
             node_list_to_add = [central_node]
         else:
             node_list_to_add = []
-        cells = pd.read_excel(os.path.join(self.graph_dir, fold_name+'-detections.xlsx'))[:3]
+        cells = pd.read_excel(os.path.join(self.graph_dir, fold_name+'-detections.xlsx'))
         attrib_options = {k + 1: v for (k, v) in zip(range(len(list(cells)[3:])), list(cells)[3:])}
 
         for row, cell in cells.iterrows():
-            node_attribute_dict = {attrib_options[n]: cell[attrib_options[n]] for n in self.attrib_types_list}
+            if self.attrib_types_list[0] != 'control':
+                print('Passed!')
+                node_attribute_dict = {attrib_options[n]: cell[attrib_options[n]] for n in self.attrib_types_list}
+            else:
+                node_attribute_dict = {'control': '0'}
             current_node = Node(row + 1, 1, node_attribute_dict, x=cell[attrib_options[1]], y=cell[attrib_options[2]])
             node_list_to_add = node_list_to_add + [current_node]
         return node_list_to_add
 
     def create_edges_given_nodes(self):
+        # TODO: create edges based on the function (star, spatial, similarity) tag and parameter set given while initiating the graph
         edge_list_to_add = []
         for node in self.nodes[1:]:
             another_edge = Edge(self.nodes[0], node)
             edge_list_to_add.append(another_edge)
+        # if edge_funct == 'star':
+        #     for node in self.nodes[1:]:
+        #         another_edge = Edge(self.nodes[0], node)
+        #         edge_list_to_add.append(another_edge)
+        # elif edge_funct == 'spatial':
+        #
         return edge_list_to_add
 
     def self_assemble(self):
@@ -106,9 +120,9 @@ class XML():
         self.graph = ET.SubElement(self.root, root_child_tag, id=str(graph_id), edgeids="false", edgemode="undirected")
 
     def one_node_writer(self, node_to_add):
-        node = ET.SubElement(self.graph, "node", id="_{}".format(node_to_add._id))
-        for feature in enumerate(node_to_add.attr_dict.keys()):
-            attr_x = ET.SubElement(node, "attr", name=feature)
+        node = ET.SubElement(self.graph, "node", id="_{}".format(node_to_add.identifier))
+        for i, feature in enumerate(node_to_add.attr_dict.keys()):
+            attr_x = ET.SubElement(node, "attr", name='attr_{}'.format(i))
             _float = ET.SubElement(attr_x, "float").text = str(node_to_add.attr_dict[feature])
 
     def one_edge_writer(self, edge_to_add, star_shaped_graph=True):
@@ -220,7 +234,7 @@ def assemble_data(myfolder):
         key_list = [int(l) for l in str_list.replace(' ', '').split(',')]
     except:
         print('Something went wrong with your input. Only x, y coordinates selected as attributes')
-        key_list = [1, 2]
+        key_list=['control']
     for subdirectory in os.listdir(masks):
         graph_dir = os.path.join(masks, subdirectory)
         one_graph = Graph(graph_dir, key_list)
@@ -232,3 +246,4 @@ def assemble_data(myfolder):
     myclassdict = create_class_dict(myfolder)
     addCXLs(myfolder, myclassdict)
 
+g = Graph()

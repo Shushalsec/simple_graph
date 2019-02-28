@@ -30,3 +30,9 @@ b = a + 'def'
 a.mul(3)
 print(a)
 ThirdClass.__bases__
+
+import os
+files = [file for file in os.listdir(r'Z:\GRP Dawson\02_Whole slides\2018-189_pT1 Study') if 'HE' in file and '.mrxs' in file]
+import pandas as pd
+file_df = pd.DataFrame(files)
+file_df.to_excel('pt1_he_image_list.xlsx')
