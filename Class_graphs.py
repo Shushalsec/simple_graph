@@ -2,7 +2,9 @@ import os
 import xml.etree.ElementTree as ET
 import shutil
 import pandas as pd
-
+import json
+import numpy as np
+from scipy import spatial
 
 class Node:
     """Class for building a Node based on the node dictionary extracted from the image
@@ -38,19 +40,23 @@ class Graph:
     Graph class to generate graphs from input data or based on pre-existing folder files with relevant QuPath data.
     """
 
-    def __init__(self, graph_dir, attrib_types_list):
+    def __init__(self, graph_dir):
         """
 
         :param graph_dir: individual folder within masks folder with the excel export, txt file for segmentation
         :param attrib_types_list: list of numbers that indicate the key for the selected parameter (value)
         """
-
+        self.parameter_dir = os.path.join(graph_dir, '../..')
+        with open(os.path.join(self.parameter_dir, 'graph_parameters.txt')) as parameter_file:
+            self.graph_parameters = json.load(parameter_file)
+        self.attrib_types_list = [int(key.strip()) for key in self.graph_parameters['node_attr_list'].split(',')]
         self.nodes = []  # node objects are kept in a list
         self.edges = []  # edge objects are kept in a list
         # self._class = _class  # graph class to be extracted in advance from the folder name
         self.graph_dir = graph_dir  # path to the directory
-        self.attrib_types_list = attrib_types_list  # excel column to take as attribute
+        # self.attrib_types_list = attrib_types_list  # excel column to take as attribute
         # self.edge_funct = edge_funct
+
 
     def add_nodes(self, node_list):
         # add nodes that are given as a list
@@ -77,7 +83,6 @@ class Graph:
 
         for row, cell in cells.iterrows():
             if self.attrib_types_list[0] != 'control':
-                print('Passed!')
                 node_attribute_dict = {attrib_options[n]: cell[attrib_options[n]] for n in self.attrib_types_list}
             else:
                 node_attribute_dict = {'control': '0'}
@@ -88,15 +93,33 @@ class Graph:
     def create_edges_given_nodes(self):
         # TODO: create edges based on the function (star, spatial, similarity) tag and parameter set given while initiating the graph
         edge_list_to_add = []
-        for node in self.nodes[1:]:
-            another_edge = Edge(self.nodes[0], node)
-            edge_list_to_add.append(another_edge)
-        # if edge_funct == 'star':
-        #     for node in self.nodes[1:]:
-        #         another_edge = Edge(self.nodes[0], node)
-        #         edge_list_to_add.append(another_edge)
-        # elif edge_funct == 'spatial':
-        #
+        # for node in self.nodes[1:]:
+        #     another_edge = Edge(self.nodes[0], node, {})
+        #     edge_list_to_add.append(another_edge)
+        if self.graph_parameters['edge']['function'] == 'star':
+            edge_list_to_add = [Edge(self.nodes[0], node, {}) for node in self.nodes[1:]]
+        elif self.graph_parameters['edge']['function'] == 'spatial':
+            x = np.asarray([g.nodes[i].x for i in range(len(g.nodes))])
+            y = np.asarray([g.nodes[i].y for i in range(len(g.nodes))])
+            if self.graph_parameters['edge']['dist_normalize']=='Y':
+                x = (x - np.min(x)) / (np.max(x) - np.min(x))
+                y = (y - np.min(y)) / (np.max(y) - np.min(y))
+            tree = spatial.KDTree(list(zip(x, y)))
+            k_nearest = self.graph_parameters['edge']['KDTree_k']
+            dist, nn = tree.query(tree.data, k=k_nearest)  # array of distances and k nearest neighbors for each node
+            # iterate over the columns of the numpy array with nearest neighbor indices
+            for column in range(1, nn.shape[1]):  # omit the first column as this is the node index itself or 0 distance
+                for j in range(nn.shape[0]):
+                    edge_list_to_add.append(Edge(g.nodes[j], g.nodes[nn[j, column]], {'spatial_distance': dist[j, column]}))
+        elif self.graph_parameters['edge']['function'] == 'similarity':
+            keys = [key for key in list(self.nodes[0].attr_dict.keys()) if key != 'type']
+            measurements = [tuple(node.attr_dict[k] for k in keys) for node in self.nodes]
+            tree = spatial.KDTree(measurements)
+            k_nearest = self.graph_parameters['edge']['KDTree_k']
+            dist, nn = tree.query(tree.data, k=k_nearest, p=1)  # array of k nearest neighbors for each node
+            for column in range(1, nn.shape[1]):  # omit the first column as this is the node index itself or 0 distance
+                for j in range(nn.shape[0]):
+                    edge_list_to_add.append(Edge(g.nodes[j], g.nodes[nn[j, column]], {'feature_manhattan_distance': dist[j, column]}))
         return edge_list_to_add
 
     def self_assemble(self):
@@ -228,16 +251,16 @@ def assemble_data(myfolder):
     cells = pd.read_excel(os.path.join(fold, fold_name + '-detections.xlsx'))[:3]
     attrib_options = {k + 1: v for (k, v) in zip(range(len(list(cells)[3:])), list(cells)[3:])}
     print(attrib_options)
-    key_list=[]
-    str_list = input('Time to choose the node attributes. Enter comma separated number keys of the attributes to be included\n')
-    try:
-        key_list = [int(l) for l in str_list.replace(' ', '').split(',')]
-    except:
-        print('Something went wrong with your input. Only x, y coordinates selected as attributes')
-        key_list=['control']
+    # key_list=[]
+    # str_list = input('Time to choose the node attributes. Enter comma separated number keys of the attributes to be included\n')
+    # try:
+    #     key_list = [int(l) for l in str_list.replace(' ', '').split(',')]
+    # except:
+    #     print('Something went wrong with your input. Only x, y coordinates selected as attributes')
+    #     key_list=['control']
     for subdirectory in os.listdir(masks):
         graph_dir = os.path.join(masks, subdirectory)
-        one_graph = Graph(graph_dir, key_list)
+        one_graph = Graph(graph_dir)
         one_graph.self_assemble()
         i = subdirectory.split('_')[-2]
         one_XML = XML(one_graph, graph_dir, graph_id=i)
@@ -246,4 +269,22 @@ def assemble_data(myfolder):
     myclassdict = create_class_dict(myfolder)
     addCXLs(myfolder, myclassdict)
 
-g = Graph()
+g = Graph(r'M:\ged-shushan\ged-shushan\data\Letter\results\masks\287c_B2004.12899_III-B_HE_0_abnormal')
+g.self_assemble()
+# keys = [i for i in list(g.nodes[0].attr_dict.keys())]
+# measurements = [tuple(i.attr_dict[k] for k in keys) for i in g.nodes]
+#
+# edge_list_to_add = []
+# x = np.asarray([g.nodes[i].x for i in range(len(g.nodes))])
+# y = np.asarray([g.nodes[i].y for i in range(len(g.nodes))])
+#
+# tree = spatial.KDTree(measurements)
+# k_nearest = g.graph_parameters['edge']['KDTree_k']
+# dist, nn = tree.query(tree.data, k=2, p=1)  # array of k nearest neighbors for each node
+#
+# # iterate over the columns of the numpy array with nearest neighbor indices
+# for column in range(1, nn.shape[1]):
+#     for j in range(nn.shape[0]):
+#         print(Edge(g.nodes[j], g.nodes[nn[j, column]], {'measurement_pulled_distance':dist[j,column]}))
+#
+#
