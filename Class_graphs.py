@@ -47,7 +47,7 @@ class Graph:
         :param attrib_types_list: list of numbers that indicate the key for the selected parameter (value)
         """
         self.parameter_dir = os.path.join(graph_dir, '../..')
-        with open(os.path.join(self.parameter_dir, 'graph_parameters.txt')) as parameter_file:
+        with open(os.path.join('parameters.txt')) as parameter_file:
             self.graph_parameters = json.load(parameter_file)
         self.attrib_types_list = [int(key.strip()) for key in self.graph_parameters['node_attr_list'].split(',')]
         self.nodes = []  # node objects are kept in a list
@@ -99,8 +99,8 @@ class Graph:
         if self.graph_parameters['edge']['function'] == 'star':
             edge_list_to_add = [Edge(self.nodes[0], node, {}) for node in self.nodes[1:]]
         elif self.graph_parameters['edge']['function'] == 'spatial':
-            x = np.asarray([g.nodes[i].x for i in range(len(g.nodes))])
-            y = np.asarray([g.nodes[i].y for i in range(len(g.nodes))])
+            x = np.asarray([self.nodes[i].x for i in range(len(self.nodes))])
+            y = np.asarray([self.nodes[i].y for i in range(len(self.nodes))])
             if self.graph_parameters['edge']['dist_normalize']=='Y':
                 x = (x - np.min(x)) / (np.max(x) - np.min(x))
                 y = (y - np.min(y)) / (np.max(y) - np.min(y))
@@ -110,7 +110,9 @@ class Graph:
             # iterate over the columns of the numpy array with nearest neighbor indices
             for column in range(1, nn.shape[1]):  # omit the first column as this is the node index itself or 0 distance
                 for j in range(nn.shape[0]):
-                    edge_list_to_add.append(Edge(g.nodes[j], g.nodes[nn[j, column]], {'spatial_distance': dist[j, column]}))
+                    edge_list_to_add.append(Edge(self.
+                                                 nodes[j], self.
+                                                 nodes[nn[j, column]], {'spatial_distance': dist[j, column]}))
         elif self.graph_parameters['edge']['function'] == 'similarity':
             keys = [key for key in list(self.nodes[0].attr_dict.keys()) if key != 'type']
             measurements = [tuple(node.attr_dict[k] for k in keys) for node in self.nodes]
@@ -119,7 +121,9 @@ class Graph:
             dist, nn = tree.query(tree.data, k=k_nearest, p=1)  # array of k nearest neighbors for each node
             for column in range(1, nn.shape[1]):  # omit the first column as this is the node index itself or 0 distance
                 for j in range(nn.shape[0]):
-                    edge_list_to_add.append(Edge(g.nodes[j], g.nodes[nn[j, column]], {'feature_manhattan_distance': dist[j, column]}))
+                    edge_list_to_add.append(Edge(self.
+                                                 nodes[j], self.
+                                                 nodes[nn[j, column]], {'feature_manhattan_distance': dist[j, column]}))
         return edge_list_to_add
 
     def self_assemble(self):
@@ -269,22 +273,35 @@ def assemble_data(myfolder):
     myclassdict = create_class_dict(myfolder)
     addCXLs(myfolder, myclassdict)
 
-g = Graph(r'M:\ged-shushan\ged-shushan\data\Letter\results\masks\287c_B2004.12899_III-B_HE_0_abnormal')
-g.self_assemble()
-# keys = [i for i in list(g.nodes[0].attr_dict.keys())]
-# measurements = [tuple(i.attr_dict[k] for k in keys) for i in g.nodes]
+
+
+# if __name__=='__main__':
+#     g = Graph(r'M:\ged-shushan\ged-shushan\data\Letter\results\masks\287c_B2004.12899_III-B_HE_0_abnormal')
+#     self.
+#     self_assemble()
+# keys = [i for i in list(self.
+# nodes[0].attr_dict.keys())]
+# measurements = [tuple(i.attr_dict[k] for k in keys) for i in self.
+# nodes]
 #
 # edge_list_to_add = []
-# x = np.asarray([g.nodes[i].x for i in range(len(g.nodes))])
-# y = np.asarray([g.nodes[i].y for i in range(len(g.nodes))])
+# x = np.asarray([self.
+# nodes[i].x for i in range(len(self.
+# nodes))])
+# y = np.asarray([self.
+# nodes[i].y for i in range(len(self.
+# nodes))])
 #
 # tree = spatial.KDTree(measurements)
-# k_nearest = g.graph_parameters['edge']['KDTree_k']
+# k_nearest = self.
+# graph_parameters['edge']['KDTree_k']
 # dist, nn = tree.query(tree.data, k=2, p=1)  # array of k nearest neighbors for each node
 #
 # # iterate over the columns of the numpy array with nearest neighbor indices
 # for column in range(1, nn.shape[1]):
 #     for j in range(nn.shape[0]):
-#         print(Edge(g.nodes[j], g.nodes[nn[j, column]], {'measurement_pulled_distance':dist[j,column]}))
+#         print(Edge(self.
+#         nodes[j], self.
+#         nodes[nn[j, column]], {'measurement_pulled_distance':dist[j,column]}))
 #
 #
