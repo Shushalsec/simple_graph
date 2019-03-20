@@ -1,7 +1,7 @@
 import os
 
-QUPATH_DIR = 'M:\pT1_selected'
-# QUPATH_DIR = os.getcwd()
+# QUPATH_DIR = 'M:\pT1_selected - Copy'
+QUPATH_DIR = os.getcwd()
 project_name = os.path.basename(os.path.normpath(QUPATH_DIR))
 
 

@@ -166,7 +166,8 @@ class XML():
             XML.one_edge_writer(self, edge, star_shaped_graph=True)
         tree = ET.ElementTree(self.root)
         tree.write((os.path.join(self.dst_path, "{}-graph.xhtml".format(self.graph_id))))  # for opening in a browser
-        tree.write((os.path.join(self.dst_path, "graph_{}.gxl".format(self.graph_id))))  # for using in GED software
+        filename_graph = os.path.basename(os.path.normpath(self.graph_object.graph_dir))
+        tree.write((os.path.join(self.dst_path, "{}_{}.gxl".format(filename_graph, self.graph_id))))  # for using in GED software
 
 
 
@@ -182,16 +183,7 @@ def create_class_dict(all_dir):
         class_dict[folder.split('_')[-1]].append(folder)  # add the folder name to the appropriate list in the dict
     return class_dict
 
-
-
-def addCXLs(all_dir, class_dict):
-    """
-    Function for creating 3 sets from .gxl files, train : test : validation, with the size ratio of 2 : 1 :1. Files are
-    copied to the new folders and .cxl files with the metadata are created to be used later by GED software
-    :param all_dir: directory with the masks folder and detections.txt file
-    :param class_dict: dictionary defining the class - normal or abnormal, for each gland
-    :return: None
-    """
+def copy_gxl_files(all_dir):
     masks_dir = os.path.join(all_dir, 'masks')  # directory with folders for each gland
     os.mkdir(os.path.join(all_dir, 'data'))  # create a new directory for saving result data
     data_dir = os.path.join(all_dir, 'data')  # directory that will be later accessed by GED
@@ -207,6 +199,19 @@ def addCXLs(all_dir, class_dict):
                 source_file_path = os.path.join(source, file)
                 # copy the file from source to the directory named data
                 shutil.copy(source_file_path, data_dir)
+
+
+
+def addCXLs(all_dir, class_dict):
+    """
+    Function for creating 3 sets from .gxl files, train : test : validation, with the size ratio of 2 : 1 :1. Files are
+    copied to the new folders and .cxl files with the metadata are created to be used later by GED software
+    :param all_dir: directory with the masks folder and detections.txt file
+    :param class_dict: dictionary defining the class - normal or abnormal, for each gland
+    :return: None
+    """
+
+    data_dir = os.path.join(all_dir, 'data')
     # dictionary to keep track of the gland titles to be used in 3 .cxl files
     data_dict = {'train.cxl': [], 'test.cxl': [], 'validation.cxl': []}
     # set a switch for separating the .gxl files
@@ -255,13 +260,7 @@ def assemble_data(myfolder):
     cells = pd.read_excel(os.path.join(fold, fold_name + '-detections.xlsx'))[:3]
     attrib_options = {k + 1: v for (k, v) in zip(range(len(list(cells)[3:])), list(cells)[3:])}
     print(attrib_options)
-    # key_list=[]
-    # str_list = input('Time to choose the node attributes. Enter comma separated number keys of the attributes to be included\n')
-    # try:
-    #     key_list = [int(l) for l in str_list.replace(' ', '').split(',')]
-    # except:
-    #     print('Something went wrong with your input. Only x, y coordinates selected as attributes')
-    #     key_list=['control']
+
     for subdirectory in os.listdir(masks):
         graph_dir = os.path.join(masks, subdirectory)
         one_graph = Graph(graph_dir)
@@ -271,37 +270,7 @@ def assemble_data(myfolder):
         one_XML.XML_writer()
 
     myclassdict = create_class_dict(myfolder)
-    addCXLs(myfolder, myclassdict)
+    copy_gxl_files(myfolder)
+    # addCXLs(myfolder, myclassdict)
 
 
-
-# if __name__=='__main__':
-#     g = Graph(r'M:\ged-shushan\ged-shushan\data\Letter\results\masks\287c_B2004.12899_III-B_HE_0_abnormal')
-#     self.
-#     self_assemble()
-# keys = [i for i in list(self.
-# nodes[0].attr_dict.keys())]
-# measurements = [tuple(i.attr_dict[k] for k in keys) for i in self.
-# nodes]
-#
-# edge_list_to_add = []
-# x = np.asarray([self.
-# nodes[i].x for i in range(len(self.
-# nodes))])
-# y = np.asarray([self.
-# nodes[i].y for i in range(len(self.
-# nodes))])
-#
-# tree = spatial.KDTree(measurements)
-# k_nearest = self.
-# graph_parameters['edge']['KDTree_k']
-# dist, nn = tree.query(tree.data, k=2, p=1)  # array of k nearest neighbors for each node
-#
-# # iterate over the columns of the numpy array with nearest neighbor indices
-# for column in range(1, nn.shape[1]):
-#     for j in range(nn.shape[0]):
-#         print(Edge(self.
-#         nodes[j], self.
-#         nodes[nn[j, column]], {'measurement_pulled_distance':dist[j,column]}))
-#
-#
