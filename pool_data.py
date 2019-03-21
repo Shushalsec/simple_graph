@@ -12,9 +12,9 @@ def copy_gxl_files_from(src_dir, dst_dir):
 
 if __name__ == '__main__':
 
-    # PROJECT_DIR = r'M:\pT1_selected - exp1'
-    PROJECT_DIR = os.getcwd()
-    pooled_data_dir = os.path.join(PROJECT_DIR, 'pooled_image_data')
+    PROJECT_DIR = r'M:\pT1_selected - exp1'
+    # PROJECT_DIR = os.getcwd()
+    pooled_data_dir = os.path.join(PROJECT_DIR, 'data_for_GED')
     version_name = os.path.basename(os.path.normpath(PROJECT_DIR))
 
     with open(os.path.join(PROJECT_DIR, 'parameters.txt')) as parameter_file:

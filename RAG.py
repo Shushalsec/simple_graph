@@ -54,4 +54,12 @@ gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 blurred = cv2.GaussianBlur(gray, (5, 5), 0)
 thresh = cv2.threshold(blurred, 60, 255, cv2.THRESH_BINARY)[1]
 
+import json
+import os
 
+with open('parameters.txt') as parameter_file:
+    parameters = json.load(parameter_file)
+parameters['main_dir']
+
+with open('parameters.txt', 'w') as parameter_file:
+    json.dump(parameters, parameter_file)

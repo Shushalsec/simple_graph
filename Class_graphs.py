@@ -81,6 +81,13 @@ class Graph:
         cells = pd.read_excel(os.path.join(self.graph_dir, fold_name+'-detections.xlsx'))
         attrib_options = {k + 1: v for (k, v) in zip(range(len(list(cells)[3:])), list(cells)[3:])}
 
+        with open('parameters.txt', 'r') as parameter_file:
+            parameters = json.load(parameter_file)
+        for i, attribute_index in self.attrib_types_list:
+
+            parameters['attribute_{}'.format(i)] = attrib_options[attribute_index]
+        with open('parameters.txt', 'w') as parameter_file:
+            json.dump(parameters, parameter_file)
         for row, cell in cells.iterrows():
             if self.attrib_types_list[0] != 'control':
                 node_attribute_dict = {attrib_options[n]: cell[attrib_options[n]] for n in self.attrib_types_list}
@@ -167,7 +174,7 @@ class XML():
         tree = ET.ElementTree(self.root)
         tree.write((os.path.join(self.dst_path, "{}-graph.xhtml".format(self.graph_id))))  # for opening in a browser
         filename_graph = os.path.basename(os.path.normpath(self.graph_object.graph_dir))
-        tree.write((os.path.join(self.dst_path, "{}_{}.gxl".format(filename_graph, self.graph_id))))  # for using in GED software
+        tree.write((os.path.join(self.dst_path, "{}.gxl".format(filename_graph))))  # for using in GED software
 
 
 

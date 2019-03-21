@@ -2,15 +2,15 @@ import os
 import shutil
 import datetime
 import json
-from directories_and_gxl import my_version_name
-
-
-with open('parameters.txt') as parameter_file:
-    parameters = json.load(parameter_file)
-SOURCE_DIR = os.getcwd()
 
 # if __name__ == '__main__':
+
+SOURCE_DIR = r'M:\pT1_selected - exp1'
+# SOURCE_DIR = os.getcwd()
 HIST_DIR = r'M:\ged-shushan\ged-shushan\data\Histology'
+current_experiment = os.path.basename(os.path.normpath(SOURCE_DIR))
+dst_dir = os.path.join(HIST_DIR, current_experiment)
+
 
 currentDT = datetime.datetime.now()
 # to save the version information create a folder with the image folder name + datetime stamp
