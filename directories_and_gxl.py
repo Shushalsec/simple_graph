@@ -4,9 +4,9 @@ import Class_graphs
 
 if __name__ == '__main__':
 
-    # PROJECT_DIR = r'M:\pT1_selected - exp1'
-    PROJECT_DIR = os.getcwd()
-    pooled_data_dir = os.path.join(PROJECT_DIR, 'pooled_image_data')
+    PROJECT_DIR = r'M:\pT1_selected - exp1'
+    # PROJECT_DIR = os.getcwd()
+    # pooled_data_dir = os.path.join(PROJECT_DIR, 'pooled_image_data')
     version_name = os.path.basename(os.path.normpath(PROJECT_DIR))
 
     for folder in os.listdir(PROJECT_DIR):

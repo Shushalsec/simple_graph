@@ -59,7 +59,7 @@ import os
 
 with open('parameters.txt') as parameter_file:
     parameters = json.load(parameter_file)
-parameters['main_dir']
+parameters['bobo'] = 'dzyadzya'
 
 with open('parameters.txt', 'w') as parameter_file:
     json.dump(parameters, parameter_file)

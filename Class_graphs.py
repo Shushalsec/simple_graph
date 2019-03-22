@@ -50,6 +50,7 @@ class Graph:
         with open(os.path.join('parameters.txt')) as parameter_file:
             self.graph_parameters = json.load(parameter_file)
         self.attrib_types_list = [int(key.strip()) for key in self.graph_parameters['node_attr_list'].split(',')]
+
         self.nodes = []  # node objects are kept in a list
         self.edges = []  # edge objects are kept in a list
         # self._class = _class  # graph class to be extracted in advance from the folder name
@@ -81,13 +82,6 @@ class Graph:
         cells = pd.read_excel(os.path.join(self.graph_dir, fold_name+'-detections.xlsx'))
         attrib_options = {k + 1: v for (k, v) in zip(range(len(list(cells)[3:])), list(cells)[3:])}
 
-        with open('parameters.txt', 'r') as parameter_file:
-            parameters = json.load(parameter_file)
-        for i, attribute_index in self.attrib_types_list:
-
-            parameters['attribute_{}'.format(i)] = attrib_options[attribute_index]
-        with open('parameters.txt', 'w') as parameter_file:
-            json.dump(parameters, parameter_file)
         for row, cell in cells.iterrows():
             if self.attrib_types_list[0] != 'control':
                 node_attribute_dict = {attrib_options[n]: cell[attrib_options[n]] for n in self.attrib_types_list}
@@ -138,6 +132,8 @@ class Graph:
         self.add_nodes(node_list_new)
         edge_list = self.create_edges_given_nodes()
         self.add_edges(edge_list)
+
+
 
 
 class XML():
