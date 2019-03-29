@@ -21,8 +21,8 @@ def addCXLs(class_dict):
     :return: None
     """
 
-    # data_dir = './data_for_GED'
-    data_dir = r'M:\pT1_selected - exp1\data_for_GED'
+    data_dir = './data_for_GED'
+    # data_dir = r'M:\pT1_selected - exp1\data_for_GED'
     # dictionary to keep track of the gland titles to be used in 3 .cxl files
     data_dict = {'train.cxl': [], 'test.cxl': [], 'validation.cxl': []}
     # set a switch for separating the .gxl files
@@ -47,7 +47,7 @@ def addCXLs(class_dict):
         root = ET.Element('GraphCollection')  # xml root
         fingerprints = ET.SubElement(root, 'fingerprints')  # xml child
         # for each .gxl in the list of the graphs saved in the dictionary
-        gxl_files = [graph_file for graph_file in os.listdir(data_dir) if graph_file.endswith('.gxl')]
+        gxl_files = ['{}.gxl'.format(graph_file) for graph_file in data_dict[cxl_to_create] if graph_file.endswith('.gxl')]
         for gxl in gxl_files:
             # child of fingerprints child with attributes file name and class type
             _print = ET.SubElement(fingerprints, '_print', _file=gxl, _class=gxl.split('_')[-1])
@@ -60,10 +60,15 @@ def addCXLs(class_dict):
     createCXL('test.cxl')
     createCXL('train.cxl')
     createCXL('validation.cxl')
+    return data_dict
 
+def make_cxls():
 
-if __name__ == '__main__':
-    # data_directory = r'M:\pT1_selected - exp1\data_for_GED'
     data_directory = './data_for_GED'
     gxl_class_dict = create_class_dict(data_directory)
-    addCXLs(gxl_class_dict)
+    d = addCXLs(gxl_class_dict)
+    return d
+
+os.chdir(r'M:\pT1_selected - test1')
+my_dic = make_cxls()
+d = create_class_dict('data_for_GED')

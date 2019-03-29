@@ -272,7 +272,7 @@ def assemble_data(myfolder):
         one_XML = XML(one_graph, graph_dir, graph_id=i)
         one_XML.XML_writer()
 
-    myclassdict = create_class_dict(myfolder)
+    # myclassdict = create_class_dict(myfolder)
     copy_gxl_files(myfolder)
     # addCXLs(myfolder, myclassdict)
 

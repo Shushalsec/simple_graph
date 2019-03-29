@@ -33,3 +33,6 @@ if __name__ == '__main__':
     shutil.copytree(ged_results_dir, os.path.join(new_dir, 'results-shushan'))
     shutil.copy(r'M:\ged-shushan\ged-shushan\properties\letters-hed.prop', os.path.join(new_dir, 'letters-hed.prop'))
 
+
+    #CLEANUP OF THE Histology folder
+    shutil.rmtree('M:\ged-shushan\ged-shushan\data\Histology\data_for_GED')

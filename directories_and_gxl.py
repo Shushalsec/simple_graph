@@ -3,9 +3,9 @@ import file_organiser
 import Class_graphs
 
 if __name__ == '__main__':
-
-    PROJECT_DIR = r'M:\pT1_selected - exp1'
-    # PROJECT_DIR = os.getcwd()
+    # os.chdir(r'M:\pT1_selected - test1')
+    # PROJECT_DIR = r'M:\crypt_to_graph'
+    PROJECT_DIR = os.getcwd()
     # pooled_data_dir = os.path.join(PROJECT_DIR, 'pooled_image_data')
     version_name = os.path.basename(os.path.normpath(PROJECT_DIR))
 
