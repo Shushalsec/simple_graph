@@ -67,9 +67,9 @@ class Graph:
         # add edges given as a list
         self.edges = self.edges + edge_list
 
-    def create_nodes_from_folder(self, crypt_node=False):
+    def create_nodes_from_folder(self):
         fold_name = os.path.basename(os.path.normpath(self.graph_dir))  # get the last directory in the path
-        if crypt_node:
+        if self.graph_parameters['edge']['function'] == 'star':
             crypt_file_path = (os.path.join(self.graph_dir, fold_name+'-crypt.txt'))  # text file path
             crypt_file = pd.read_csv(crypt_file_path, header=None)  # txt file to pandas dataframe
             cryptiness_attr = {'whiteness': crypt_file.iloc[0][0]}  # percentage that is crypt based on segment.py data
@@ -92,7 +92,6 @@ class Graph:
         return node_list_to_add
 
     def create_edges_given_nodes(self):
-        # TODO: create edges based on the function (star, spatial, similarity) tag and parameter set given while initiating the graph
         edge_list_to_add = []
         # for node in self.nodes[1:]:
         #     another_edge = Edge(self.nodes[0], node, {})
@@ -111,9 +110,8 @@ class Graph:
             # iterate over the columns of the numpy array with nearest neighbor indices
             for column in range(1, nn.shape[1]):  # omit the first column as this is the node index itself or 0 distance
                 for j in range(nn.shape[0]):
-                    edge_list_to_add.append(Edge(self.
-                                                 nodes[j], self.
-                                                 nodes[nn[j, column]], {'spatial_distance': dist[j, column]}))
+                    edge_list_to_add.append(Edge(self.nodes[j], self.nodes[nn[j, column]],
+                                                 {'spatial_distance': dist[j, column]}))
         elif self.graph_parameters['edge']['function'] == 'similarity':
             keys = [key for key in list(self.nodes[0].attr_dict.keys()) if key != 'type']
             measurements = [tuple(node.attr_dict[k] for k in keys) for node in self.nodes]
@@ -122,9 +120,8 @@ class Graph:
             dist, nn = tree.query(tree.data, k=k_nearest, p=1)  # array of k nearest neighbors for each node
             for column in range(1, nn.shape[1]):  # omit the first column as this is the node index itself or 0 distance
                 for j in range(nn.shape[0]):
-                    edge_list_to_add.append(Edge(self.
-                                                 nodes[j], self.
-                                                 nodes[nn[j, column]], {'feature_manhattan_distance': dist[j, column]}))
+                    edge_list_to_add.append(Edge(self.nodes[j], self.nodes[nn[j, column]],
+                                                 {'feature_manhattan_distance': dist[j, column]}))
         return edge_list_to_add
 
     def self_assemble(self):
@@ -203,56 +200,6 @@ def copy_gxl_files(all_dir):
                 # copy the file from source to the directory named data
                 shutil.copy(source_file_path, data_dir)
 
-
-
-def addCXLs(all_dir, class_dict):
-    """
-    Function for creating 3 sets from .gxl files, train : test : validation, with the size ratio of 2 : 1 :1. Files are
-    copied to the new folders and .cxl files with the metadata are created to be used later by GED software
-    :param all_dir: directory with the masks folder and detections.txt file
-    :param class_dict: dictionary defining the class - normal or abnormal, for each gland
-    :return: None
-    """
-
-    data_dir = os.path.join(all_dir, 'data')
-    # dictionary to keep track of the gland titles to be used in 3 .cxl files
-    data_dict = {'train.cxl': [], 'test.cxl': [], 'validation.cxl': []}
-    # set a switch for separating the .gxl files
-    test_switch = True
-    # for each .gxl graph in data folder
-    for graph_class, graph_list in class_dict.items():
-        for i, folder in enumerate(graph_list):
-            # move every other into training set
-            if i % 2 == 0:
-                data_dict['train.cxl'].append(folder)
-            # move every other of the remaining into the test set
-            elif test_switch:
-                data_dict['test.cxl'].append(folder)
-                test_switch = False
-            # move the remaining ones into the validation set
-            else:
-                data_dict['validation.cxl'].append(folder)
-                test_switch = True
-        # inner function for creating the .cxl files when given the name of the dataset
-
-    def createCXL(cxl_to_create):
-        root = ET.Element('GraphCollection')  # xml root
-        fingerprints = ET.SubElement(root, 'fingerprints')  # xml child
-        # for each .gxl in the list of the graphs saved in the dictionary
-        for folder in data_dict[cxl_to_create]:
-            gxl_file = [graph_file for graph_file in os.listdir(os.path.join(all_dir, 'masks', folder)) if '.gxl' in graph_file][0]
-            # child of fingerprints child with attributes file name and class type
-            _print = ET.SubElement(fingerprints, '_print', _file=gxl_file, _class=folder.split('_')[-1])
-        # save the graph
-        tree = ET.ElementTree(root)
-        tree.write((os.path.join(data_dir, cxl_to_create)))
-        print(cxl_to_create, 'has', len(data_dict[cxl_to_create]), 'graphs!')
-    # call the function to create the 3 required .cxl files
-    createCXL('test.cxl')
-    createCXL('train.cxl')
-    createCXL('validation.cxl')
-
-
 def assemble_data(myfolder):
 
     # myfolder = 'M:/ged-shushan/ged-shushan/data/Letter/results'
@@ -271,9 +218,8 @@ def assemble_data(myfolder):
         i = subdirectory.split('_')[-2]
         one_XML = XML(one_graph, graph_dir, graph_id=i)
         one_XML.XML_writer()
-
-    # myclassdict = create_class_dict(myfolder)
     copy_gxl_files(myfolder)
-    # addCXLs(myfolder, myclassdict)
 
 
+g = Graph(r'M:\crypt_to_graph\287c_B2004.12899_III-B_HE_crypt_to_graph\masks\287c_B2004.12899_III-B_HE_0_Normal')
+g.self_assemble()
