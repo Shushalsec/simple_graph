@@ -27,3 +27,4 @@ else:
         parameters['attribute_{}'.format(i)] = attrib_options[int(attribute_index)]
     with open(os.path.join(project_dir, 'parameters.txt'), 'w') as parameter_file:
         json.dump(parameters, parameter_file)
+

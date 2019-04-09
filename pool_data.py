@@ -13,6 +13,7 @@ def copy_gxl_files_from(src_dir, dst_dir):
 
 def copy_results():
     src_dir = 'data_for_GED'
+    assert os.listdir(src_dir)
     HIST_DIR = r'M:\ged-shushan\ged-shushan\data\Histology'
     dst_dir = os.path.join(HIST_DIR, 'data_for_GED')
     shutil.copytree(src_dir, dst_dir)
@@ -39,9 +40,12 @@ if __name__ == '__main__':
 
     # PROJECT_DIR = r'M:\pT1_selected - exp1'
     # PROJECT_DIR = r'M:\crypt_to_graph'
-    # os.chdir(r'M:\pT1_selected - test1')
+    os.chdir(r'M:\pT1_selected - template_annotated - QuPath_export_cell')
     PROJECT_DIR = os.getcwd()
     pooled_data_dir = os.path.join(PROJECT_DIR, 'data_for_GED')
+    if len(os.listdir(pooled_data_dir))>0:
+        print('CLEAN THE FOLDER data_for_GED!')
+        sys.exit()
     version_name = os.path.basename(os.path.normpath(PROJECT_DIR))
 
     with open(os.path.join(PROJECT_DIR, 'parameters.txt')) as parameter_file:
@@ -53,9 +57,9 @@ if __name__ == '__main__':
         for folder in os.listdir(PROJECT_DIR):
             if os.path.isdir(os.path.join(PROJECT_DIR, folder)) and folder.endswith(version_name) and len(os.listdir(os.path.join(PROJECT_DIR, folder)))>0:
                 copy_gxl_files_from(os.path.join(PROJECT_DIR, folder), pooled_data_dir)
-            CXL.make_cxls()
-            copy_results()
-            update_parameters(PROJECT_DIR, version_name)
+        CXL.make_cxls()
+        copy_results()
+        update_parameters(PROJECT_DIR, version_name)
     elif isinstance(parameters['pool_images'], list):
         for folder in parameters['pool_images']:
             copy_gxl_files_from(os.path.join(PROJECT_DIR, folder+'_'+version_name), pooled_data_dir)

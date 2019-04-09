@@ -10,8 +10,10 @@ if __name__ == '__main__':
     ged_src_dir = os.path.join(HIST_DIR, 'data_for_GED')
 
     result_dir = r'M:\EXPERIMENT_RESULTS'
-    project_dir = os.getcwd()
-    # project_dir = r'M:\pT1_selected - exp1'
+    if not os.path.isdir(result_dir):
+        os.mkdir(result_dir)
+    # project_dir = os.getcwd()
+    project_dir = r'M:\pT1_selected - template_annotated - QuPath_export_cell'
 
     experiment_name = os.path.basename(os.path.normpath(project_dir))
     currentDT = datetime.datetime.now()

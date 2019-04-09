@@ -13,11 +13,12 @@ class Node:
     """
     identifier: int
 
-    def __init__(self, identifier, node_type, attr_dict, x=0, y=0):
+    def __init__(self, identifier, attr_dict, x=0, y=0):
         self.identifier = identifier  # node _id
         # save the node type if needed
         self.attr_dict = attr_dict
-        self.attr_dict['type'] = node_type  # type of the node - central or peripheral
+
+        # self.attr_dict['type'] = node_type  # type of the node - central or peripheral
         self.x = x  # node x coordinate of the cell centroid
         self.y = y  # node y coordinate of the cell centroid
 
@@ -46,8 +47,8 @@ class Graph:
         :param graph_dir: individual folder within masks folder with the excel export, txt file for segmentation
         :param attrib_types_list: list of numbers that indicate the key for the selected parameter (value)
         """
-        self.parameter_dir = os.path.join(graph_dir, '../..')
-        with open(os.path.join('parameters.txt')) as parameter_file:
+        self.parameter_dir = os.path.join(graph_dir, '../../..')
+        with open(os.path.join(self.parameter_dir, 'parameters.txt')) as parameter_file:
             self.graph_parameters = json.load(parameter_file)
         self.attrib_types_list = [int(key.strip()) for key in self.graph_parameters['node_attr_list'].split(',')]
 
@@ -72,22 +73,24 @@ class Graph:
         if self.graph_parameters['edge']['function'] == 'star':
             crypt_file_path = (os.path.join(self.graph_dir, fold_name+'-crypt.txt'))  # text file path
             crypt_file = pd.read_csv(crypt_file_path, header=None)  # txt file to pandas dataframe
-            cryptiness_attr = {'whiteness': crypt_file.iloc[0][0]}  # percentage that is crypt based on segment.py data
+            cryptiness_and_type = {'whiteness': crypt_file.iloc[0][0], 'type': 0}  # percentage that is crypt based on segment.py data
             crypt_x = crypt_file.iloc[1][0]  # crypt centroid
             crypt_y = crypt_file.iloc[2][0]
-            central_node = Node(0, 0, cryptiness_attr, x=crypt_x, y=crypt_y)
+            central_node = Node(0, cryptiness_and_type, x=crypt_x, y=crypt_y)
             node_list_to_add = [central_node]
         else:
             node_list_to_add = []
         cells = pd.read_excel(os.path.join(self.graph_dir, fold_name+'-detections.xlsx'))
         attrib_options = {k + 1: v for (k, v) in zip(range(len(list(cells)[3:])), list(cells)[3:])}
-
+        attrib_options[len(attrib_options.keys())+1] = 'type'
         for row, cell in cells.iterrows():
             if self.attrib_types_list[0] != 'control':
                 node_attribute_dict = {attrib_options[n]: cell[attrib_options[n]] for n in self.attrib_types_list}
+                if self.graph_parameters['edge']['function'] == 'star':
+                    node_attribute_dict['type'] = 1
             else:
                 node_attribute_dict = {'control': '0'}
-            current_node = Node(row + 1, 1, node_attribute_dict, x=cell[attrib_options[1]], y=cell[attrib_options[2]])
+            current_node = Node(row + 1, node_attribute_dict, x=cell[attrib_options[1]], y=cell[attrib_options[2]])
             node_list_to_add = node_list_to_add + [current_node]
         return node_list_to_add
 
@@ -113,7 +116,8 @@ class Graph:
                     edge_list_to_add.append(Edge(self.nodes[j], self.nodes[nn[j, column]],
                                                  {'spatial_distance': dist[j, column]}))
         elif self.graph_parameters['edge']['function'] == 'similarity':
-            keys = [key for key in list(self.nodes[0].attr_dict.keys()) if key != 'type']
+            print(list(self.nodes[0].attr_dict.keys()))
+            keys = [key for key in list(self.nodes[0].attr_dict.keys())]
             measurements = [tuple(node.attr_dict[k] for k in keys) for node in self.nodes]
             tree = spatial.KDTree(measurements)
             k_nearest = self.graph_parameters['edge']['KDTree_k']
@@ -127,8 +131,9 @@ class Graph:
     def self_assemble(self):
         node_list_new = self.create_nodes_from_folder()
         self.add_nodes(node_list_new)
-        edge_list = self.create_edges_given_nodes()
-        self.add_edges(edge_list)
+        if len(self.nodes) > 1:
+            edge_list = self.create_edges_given_nodes()
+            self.add_edges(edge_list)
 
 
 
@@ -152,8 +157,8 @@ class XML():
             attr_x = ET.SubElement(node, "attr", name='attr_{}'.format(i))
             _float = ET.SubElement(attr_x, "float").text = str(node_to_add.attr_dict[feature])
 
-    def one_edge_writer(self, edge_to_add, star_shaped_graph=True):
-        if star_shaped_graph:
+    def one_edge_writer(self, edge_to_add):
+        if self.graph_object.graph_parameters['edge']['function'] == 'star':
             edge = ET.SubElement(self.graph, "edge", _from="_0", _to="_{}".format(edge_to_add._to))
         else:
             edge = ET.SubElement(self.graph, "edge", _from="_{}".format(edge_to_add._from), _to="_{}".format(edge_to_add._to))
@@ -163,7 +168,7 @@ class XML():
         for node in self.graph_object.nodes:
             XML.one_node_writer(self, node)
         for edge in self.graph_object.edges:
-            XML.one_edge_writer(self, edge, star_shaped_graph=True)
+            XML.one_edge_writer(self, edge)
         tree = ET.ElementTree(self.root)
         tree.write((os.path.join(self.dst_path, "{}-graph.xhtml".format(self.graph_id))))  # for opening in a browser
         filename_graph = os.path.basename(os.path.normpath(self.graph_object.graph_dir))
@@ -203,13 +208,22 @@ def copy_gxl_files(all_dir):
 def assemble_data(myfolder):
 
     # myfolder = 'M:/ged-shushan/ged-shushan/data/Letter/results'
+    project_dir = os.path.join(myfolder, '..')
+    with open(os.path.join(project_dir, 'parameters.txt'), 'r') as parameter_file:
+        parameters = json.load(parameter_file)
 
     masks = os.path.join(myfolder, 'masks')
     fold = os.path.join(myfolder, 'masks', os.listdir(masks)[0]) # fetch the first folder path
     fold_name = os.path.basename(os.path.normpath(fold))
+
     cells = pd.read_excel(os.path.join(fold, fold_name + '-detections.xlsx'))[:3]
     attrib_options = {k + 1: v for (k, v) in zip(range(len(list(cells)[3:])), list(cells)[3:])}
     print(attrib_options)
+    for i, attribute_index in enumerate(parameters['node_attr_list']):
+        print(attrib_options[int(attribute_index)])
+        parameters['attribute_{}'.format(i)] = attrib_options[int(attribute_index)]
+    with open(os.path.join(project_dir, 'parameters.txt'), 'w') as parameter_file:
+        json.dump(parameters, parameter_file)
 
     for subdirectory in os.listdir(masks):
         graph_dir = os.path.join(masks, subdirectory)
@@ -221,5 +235,20 @@ def assemble_data(myfolder):
     copy_gxl_files(myfolder)
 
 
-g = Graph(r'M:\crypt_to_graph\287c_B2004.12899_III-B_HE_crypt_to_graph\masks\287c_B2004.12899_III-B_HE_0_Normal')
-g.self_assemble()
+if __name__ == '__main__':
+    os.chdir(r'M:\pT1_selected - template_annotated - QuPath_export_cell')
+    # PROJECT_DIR = r'M:\crypt_to_graph'
+    PROJECT_DIR = os.getcwd()
+    # pooled_data_dir = os.path.join(PROJECT_DIR, 'pooled_image_data')
+    version_name = os.path.basename(os.path.normpath(PROJECT_DIR))
+
+    for folder in os.listdir(PROJECT_DIR):
+        print(folder, os.path.isdir(os.path.join(PROJECT_DIR, folder)), version_name in folder)
+        if os.path.isdir(os.path.join(PROJECT_DIR, folder)) and folder.endswith(version_name):
+            if len(os.listdir(os.path.join(PROJECT_DIR, folder)))>0:
+                if 'data' in os.listdir(os.path.join(PROJECT_DIR, folder)):
+                    print('Graphs already present, rename the data folder!')
+                    # Class_graphs.assemble_data(os.path.join(PROJECT_DIR, folder))
+                else:
+                    print('CREATING GRAPHS IN\t', folder)
+                    assemble_data(os.path.join(PROJECT_DIR, folder))
