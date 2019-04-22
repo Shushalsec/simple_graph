@@ -29,11 +29,11 @@ class Node:
 class Edge:
     def __init__(self, node1, node2, attr_dict):  # to define an edge it is required to enter the nodes to be linked
         self.attr_dict = attr_dict
-        self.source = node1.identifier  # NB the underscore before the attribute name, not a protected member
-        self.target = node2.identifier
+        self._from = node1.identifier  # NB the underscore before the attribute name, not a protected member
+        self._to = node2.identifier
 
     def __str__(self):
-        return' Edge between nodes {} and {} with attribute set {}'.format(self.source, self.target, self.attr_dict)
+        return' Edge between nodes {} and {} with attribute set {}'.format(self._from, self._to, self.attr_dict)
 
 
 class Graph:
@@ -73,6 +73,7 @@ class Graph:
         node_list_to_add = []
         cells = pd.read_excel(os.path.join(self.graph_dir, fold_name+'-detections.xlsx'))
         col_names = list(cells)
+
         feature_array = np.array([cells.iloc[:, n] for n in self.graph_parameters['node']['node_attr_list']])
 
         mean_array = np.expand_dims(np.array(self.graph_parameters['node']['attr_mean']), axis=1)
@@ -93,7 +94,6 @@ class Graph:
         #     edge_list_to_add.append(another_edge)
         if self.graph_parameters['edge']['function'] == 'star':
             edge_list_to_add = [Edge(self.nodes[0], node, {}) for node in self.nodes[1:]]
-        # TODO: fix the spatial edge function definition bug!
         elif self.graph_parameters['edge']['function'] == 'spatial':
             x = np.asarray([self.nodes[i].x for i in range(len(self.nodes))])
             y = np.asarray([self.nodes[i].y for i in range(len(self.nodes))])
@@ -101,7 +101,7 @@ class Graph:
                 x = (x - np.min(x)) / (np.max(x) - np.min(x))
                 y = (y - np.min(y)) / (np.max(y) - np.min(y))
             tree = spatial.KDTree(list(zip(x, y)))
-            k_nearest = self.graph_parameters['edge']['KDTree_k']
+            k_nearest = self.graph_parameters['edge']['KDTree_k'] + 1
             dist, nn = tree.query(tree.data, k=k_nearest)  # array of distances and k nearest neighbors for each node
             # iterate over the columns of the numpy array with nearest neighbor indices
             for column in range(1, nn.shape[1]):  # omit the first column as this is the node index itself or 0 distance
@@ -113,7 +113,7 @@ class Graph:
             keys = [key for key in list(self.nodes[0].attr_dict.keys())]
             measurements = [tuple(node.attr_dict[k] for k in keys) for node in self.nodes]
             tree = spatial.KDTree(measurements)
-            k_nearest = self.graph_parameters['edge']['KDTree_k']
+            k_nearest = self.graph_parameters['edge']['KDTree_k'] + 1
             dist, nn = tree.query(tree.data, k=k_nearest, p=1)  # array of k nearest neighbors for each node
             for column in range(1, nn.shape[1]):  # omit the first column as this is the node index itself or 0 distance
                 for j in range(nn.shape[0]):
@@ -153,9 +153,9 @@ class XML():
 
     def one_edge_writer(self, edge_to_add):
         if self.graph_object.graph_parameters['edge']['function'] == 'star':
-            edge = ET.SubElement(self.graph, "edge", source="_0", target="_{}".format(edge_to_add.target))
+            edge = ET.SubElement(self.graph, "edge", _from="_0", _to="_{}".format(edge_to_add._to))
         else:
-            edge = ET.SubElement(self.graph, "edge", source="_{}".format(edge_to_add.source), target="_{}".format(edge_to_add.target))
+            edge = ET.SubElement(self.graph, "edge", _from="_{}".format(edge_to_add._from), _to="_{}".format(edge_to_add._to))
 
     def XML_writer(self, file_extension):
         # self.graph.set('id',"graph_{}".format(graph_id))
@@ -180,73 +180,11 @@ def create_class_dict(all_dir):
         class_dict[folder.split('_')[-1]].append(folder)  # add the folder name to the appropriate list in the dict
     return class_dict
 
-# def copy_gxl_files(all_dir):
-#     masks_dir = os.path.join(all_dir, 'masks')  # directory with folders for each gland
-#     os.mkdir(os.path.join(all_dir, 'data'))  # create a new directory for saving result data
-#     data_dir = os.path.join(all_dir, 'data')  # directory that will be later accessed by GED
-#     # for each folder or gland
-#     for subdir in os.listdir(masks_dir):
-#         # path to the current directory
-#         source = os.path.join(masks_dir, subdir)
-#         # for each file in the gland directory
-#         for file in os.listdir(source):
-#             # detect the .gxl file
-#             if '.gxl' in file:
-#                 # set the path to .gxl as the source
-#                 source_file_path = os.path.join(source, file)
-#                 # copy the file from source to the directory named data
-#                 shutil.copy(source_file_path, data_dir)
-
-# def assemble_data(myfolder):
 #
-#     # myfolder = 'M:/ged-shushan/ged-shushan/data/Letter/results'
-#     project_dir = os.path.join(myfolder, '..')
-#     with open(os.path.join(project_dir, 'parameters.txt'), 'r') as parameter_file:
-#         parameters = json.load(parameter_file)
-#
-#     masks = os.path.join(myfolder, 'masks')
-#     fold = os.path.join(myfolder, 'masks', os.listdir(masks)[0]) # fetch the first folder path
-#     fold_name = os.path.basename(os.path.normpath(fold))
-#
-#     cells = pd.read_excel(os.path.join(fold, fold_name + '-detections.xlsx'))[:3]
-#     attrib_options = {k + 1: v for (k, v) in zip(range(len(list(cells)[3:])), list(cells)[3:])}
-#     print(attrib_options)
-#     for i, attribute_index in enumerate(parameters['node']['node_attr_list']):
-#         print(attrib_options[int(attribute_index)])
-#         parameters['attribute_{}'.format(i)] = attrib_options[int(attribute_index)]
-#     with open(os.path.join(project_dir, 'parameters.txt'), 'w') as parameter_file:
-#         json.dump(parameters, parameter_file)
-#     print('checkpoint 1')
-#     for subdirectory in os.listdir(masks):
-#         graph_dir = os.path.join(masks, subdirectory)
-#         one_graph = Graph(graph_dir)
-#         one_graph.self_assemble()
-#         i = subdirectory.split('_')[-2]
-#         one_XML = XML(one_graph, graph_dir, graph_id=i)
-#         one_XML.XML_writer('gxl')
-#         one_graphml = XML(one_graph, graph_dir, graph_id=1, root_tag='graphml')
-#         one_graphml.XML_writer('graphml')
-#     copy_gxl_files(myfolder)
+param_path = os.path.join(r'M:\pT1_selected - complete_annotation - organised', 'parameters.txt')
+with open(param_path) as parameter_file:
+    graph_parameters = json.load(parameter_file)
 
-
-# if __name__ == '__main__':
-#     os.chdir(r'M:\pT1_selected - complete_annotation')
-#     # PROJECT_DIR = r'M:\crypt_to_graph'
-#     PROJECT_DIR = os.getcwd()
-#     # pooled_data_dir = os.path.join(PROJECT_DIR, 'pooled_image_data')
-#     version_name = os.path.basename(os.path.normpath(PROJECT_DIR))
-#     folder = r'B08.8643_IVE_HE_pT1_selected - complete_annotation'
-#     assemble_data(os.path.join(PROJECT_DIR, folder))
-
-    #
-    # for folder in os.listdir(PROJECT_DIR):
-    #     print(folder, os.path.isdir(os.path.join(PROJECT_DIR, folder)), version_name in folder)
-    #     if os.path.isdir(os.path.join(PROJECT_DIR, folder)) and folder.endswith(version_name):
-    #         if len(os.listdir(os.path.join(PROJECT_DIR, folder)))>0:
-    #             if 'data' in os.listdir(os.path.join(PROJECT_DIR, folder)):
-    #                 print('Graphs already present, rename the data folder!')
-    #                 # Class_graphs.assemble_data(os.path.join(PROJECT_DIR, folder))
-    #             else:
-    #                 print('CREATING GRAPHS IN\t', folder)
-    #                 assemble_data(os.path.join(PROJECT_DIR, folder))
-    #
+g = Graph(r'M:\pT1_selected - complete_annotation - organised\B08.8643_IVE_HE_pT1_selected - complete_annotation\masks\B08.8643_IVE_HE_0_abnormal', graph_parameters)
+g.add_nodes(g.create_nodes_from_folder())
+g.add_edges(g.create_edges_given_nodes())
