@@ -52,7 +52,8 @@ def organiser(directory_to_organise):
 def final_organiser(all_folder):
     masks_folder = os.path.join(all_folder, 'masks')
     organiser(masks_folder)
-    detections = pd.read_csv(os.path.join(all_folder, 'detections.txt'), encoding='latin1', sep='\t')
+    detections = pd.read_csv(os.path.join(all_folder, 'detections.txt'), encoding='latin1', sep='\t').drop(columns=['Class'])
+    detections.dropna(axis=0, inplace=True, how='any')
 
     annotations = ['_'.join(file.split('_')[-2:]) for file in os.listdir(masks_folder)]
 
@@ -61,36 +62,33 @@ def final_organiser(all_folder):
         annotation_detections = detections.loc[detections['Name'] == annotation]
         move_to = [s for s in folders if annotation == '_'.join(s.split('_')[-2:])][0]
         pd.DataFrame.to_excel(annotation_detections, os.path.join(masks_folder, move_to, '{}-detections.xlsx'.format(move_to)), index=False)
-
+        if not len(annotation_detections)>0:
+            shutil.rmtree(os.path.join(masks_folder, move_to))
+            print(annotation, 'DELETED')
 
 
 if __name__ == '__main__':
-    os.chdir(r'M:\pT1_selected - template_annotated - QuPath_export_cell')
-    # PROJECT_DIR = r'M:\crypt_to_graph'
+    os.chdir(r'M:\pT1_cell_1')
     PROJECT_DIR = os.getcwd()
-    # pooled_data_dir = os.path.join(PROJECT_DIR, 'pooled_image_data')
     version_name = os.path.basename(os.path.normpath(PROJECT_DIR))
+    org_folders = os.path.join(PROJECT_DIR, 'organised_folders')
+    for folder in os.listdir(org_folders):
+        # if os.path.isdir(os.path.join(PROJECT_DIR, folder)) and folder.endswith(version_name):
+        #     if len(os.listdir(os.path.join(PROJECT_DIR, folder)))>0:
+        if os.path.isdir(os.listdir(os.path.join(org_folders, folder, 'masks'))[0]):
+            print('Skipped folder {}'.format(folder))
+        else:
+            print('ORGANISING\t', folder)
+            final_organiser(os.path.join(org_folders, folder))
+# import os
+# import pandas as pd
+# for folder in os.listdir(r'M:\pT1_cell_1\organised_folders\B16.6031_B_HE\masks'):
+#     excel = [f for f in os.listdir(os.path.join(r'M:\pT1_cell_1\organised_folders\B16.6031_B_HE\masks', folder)) if f.endswith('xlsx')][0]
+#     excel_path = os.path.join(r'M:\pT1_cell_1\organised_folders\B16.6031_B_HE\masks', folder, excel)
+#     print(excel)
+#     if not len(pd.read_excel(excel_path)) >0:
+#         print('*********', excel, '*********')
 
-    for folder in os.listdir(PROJECT_DIR):
-        print(folder, os.path.isdir(os.path.join(PROJECT_DIR, folder)), version_name in folder)
-        if os.path.isdir(os.path.join(PROJECT_DIR, folder)) and folder.endswith(version_name):
-            if len(os.listdir(os.path.join(PROJECT_DIR, folder)))>0:
-                if os.path.isdir(os.listdir(os.path.join(PROJECT_DIR, folder, 'masks'))[0]):
-                    print('Skipped folder {}'.format(folder))
-                    # Class_graphs.assemble_data(os.path.join(PROJECT_DIR, folder))
-                else:
-                    print('ORGANISING\t', folder)
-                    final_organiser(os.path.join(PROJECT_DIR, folder))
 
-# if __name__ == '__main__':
-#
-#     # PROJECT_DIR = r'M:\pT1_selected - exp1'
-#     PROJECT_DIR = os.getcwd()
-#     pooled_data_dir = os.path.join(PROJECT_DIR, 'pooled_image_data')
-#     version_name = os.path.basename(os.path.normpath(PROJECT_DIR))
-#
-#     for folder in os.listdir(PROJECT_DIR):
-#         if os.path.isdir(os.path.join(PROJECT_DIR, folder)) and folder.endswith(version_name) and len(os.listdir(os.path.join(PROJECT_DIR, folder)))>0:
-#             print('ORGANISING\t', folder)
-#             final_organiser(os.path.join(PROJECT_DIR, folder))
+
 

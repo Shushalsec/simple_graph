@@ -29,7 +29,7 @@ def update_parameters(project_dir, experiment_name):
         cells = pd.read_csv(path_to_detections, encoding="ISO-8859-1", delimiter='\t')
         attrib_options = {k + 1: v for (k, v) in zip(range(len(list(cells)[3:])), list(cells)[3:])}
 
-        for i, attribute_index in enumerate(parameters['node_attr_list']):
+        for i, attribute_index in enumerate(parameters['node']['node_attr_list']):
             print(attrib_options[int(attribute_index)])
             parameters['attribute_{}'.format(i)] = attrib_options[int(attribute_index)]
         with open(os.path.join(project_dir, 'parameters.txt'), 'w') as parameter_file:
@@ -47,20 +47,20 @@ if __name__ == '__main__':
         print('CLEAN THE FOLDER data_for_GED!')
         sys.exit()
     version_name = os.path.basename(os.path.normpath(PROJECT_DIR))
-
+    #
     with open(os.path.join(PROJECT_DIR, 'parameters.txt')) as parameter_file:
         parameters = json.load(parameter_file)
-
-
-    # if ALL means all the images should be pulled together
-    if parameters['pool_images'] == 'ALL':
-        for folder in os.listdir(PROJECT_DIR):
-            if os.path.isdir(os.path.join(PROJECT_DIR, folder)) and folder.endswith(version_name) and len(os.listdir(os.path.join(PROJECT_DIR, folder)))>0:
-                copy_gxl_files_from(os.path.join(PROJECT_DIR, folder), pooled_data_dir)
-        CXL.make_cxls()
-        copy_results()
-        update_parameters(PROJECT_DIR, version_name)
-    elif isinstance(parameters['pool_images'], list):
+    #
+    #
+    # # if ALL means all the images should be pulled together
+    # if parameters['pool_images'] == 'ALL':
+    #     for folder in os.listdir(PROJECT_DIR):
+    #         if os.path.isdir(os.path.join(PROJECT_DIR, folder)) and folder.endswith(version_name) and len(os.listdir(os.path.join(PROJECT_DIR, folder)))>0:
+    #             copy_gxl_files_from(os.path.join(PROJECT_DIR, folder), pooled_data_dir)
+    #     CXL.make_cxls()
+    #     copy_results()
+    #     update_parameters(PROJECT_DIR, version_name)
+    if isinstance(parameters['pool_images'], list):
         for folder in parameters['pool_images']:
             copy_gxl_files_from(os.path.join(PROJECT_DIR, folder+'_'+version_name), pooled_data_dir)
         CXL.make_cxls()

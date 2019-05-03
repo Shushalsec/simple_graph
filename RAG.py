@@ -1,12 +1,35 @@
 # from skimage import data, segmentation
 # from skimage.future import graph
-# from matplotlib import pyplot as plt
+from matplotlib import pyplot as plt
 import sys
+import os
+import pandas as pd
+import numpy as np
+from scipy import stats
 
-print(sys.argv[2])
 
-#
-#
+organised_folders = 'M:\pT1_selected-complete_annotation\organised_folders'
+# for folder in os.listdir(organised_folders):
+one_detections_path = os.path.join(organised_folders, os.listdir(organised_folders)[0], 'detections.txt')
+
+normals = [n for n in pd.read_csv(one_detections_path, sep='\t', encoding='unicode_escape')['Name'] if 'abnormal' not in n]
+abnormals = [abn for abn in pd.read_csv(one_detections_path, sep='\t', encoding='unicode_escape')['Name'] if 'abnormal' in abn]
+pd.DataFrame(normals)
+list(pd.read_csv(one_detections_path, sep='\t', encoding='unicode_escape')['Name'])
+
+plt.hist(normals)
+plt.hist(abnormals)
+plt.show()
+
+
+
+
+
+
+
+
+# os.system(r'M:/ged-shushan/ged-shushan/bin/algorithms/GraphMatching.java properties/letters-hed.prop')
+
 # img = plt.imread('C:/Users/Shushan/Desktop/MSc/Master Thesis/RAG/rag1.png')
 # labels = segmentation.slic(img, compactness=30, n_segments=400)
 # g = graph.rag_mean_color(img, labels)

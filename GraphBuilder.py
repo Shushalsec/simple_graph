@@ -80,10 +80,13 @@ class Graph:
         sd_array = np.expand_dims(np.array(self.graph_parameters['node']['attr_sd']), axis=1)
 
         normalised_feature_array = (feature_array - mean_array) / sd_array
+        normalised_x = (cells.iloc[:,2] - min(cells.iloc[:,2]))/(max(cells.iloc[:,2]) - min(cells.iloc[:,2]))
+        normalised_y = (cells.iloc[:,3] - min(cells.iloc[:,3]))/(max(cells.iloc[:,3]) - min(cells.iloc[:,3]))
+
         for row, cell in cells.iterrows():
 
             node_attribute_dict = {col_names[n]: normalised_feature_array[i][row] for i, n in enumerate(self.graph_parameters['node']['node_attr_list'])}
-            current_node = Node(row, node_attribute_dict, x=cell[col_names[3]], y=cell[col_names[4]])
+            current_node = Node(row, node_attribute_dict, x=normalised_x[row], y=normalised_y[row])
             node_list_to_add.append(current_node)
         return node_list_to_add
 
@@ -146,9 +149,12 @@ class XML():
     def one_node_writer(self, node_to_add):
         node = ET.SubElement(self.graph, "node", id="_{}".format(node_to_add.identifier))
         for i, feature in enumerate(node_to_add.attr_dict.keys()):
-            attr_x = ET.SubElement(node, "attr", name='attr_{}'.format(i))
-            _float = ET.SubElement(attr_x, "float").text = str(node_to_add.attr_dict[feature])
-
+            attr_i = ET.SubElement(node, "attr", name='attr_{}'.format(i))
+            _float = ET.SubElement(attr_i, "float").text = str(node_to_add.attr_dict[feature])
+        x = ET.SubElement(node, "attr", name="x")
+        x_value = ET.SubElement(x, "float").text = str(node_to_add.x)
+        y = ET.SubElement(node, "attr", name="y")
+        y_value = ET.SubElement(y, "float").text = str(node_to_add.y)
 
 
     def one_edge_writer(self, edge_to_add):
@@ -181,10 +187,17 @@ def create_class_dict(all_dir):
     return class_dict
 
 #
-param_path = os.path.join(r'M:\pT1_selected - complete_annotation - organised', 'parameters.txt')
+param_path = os.path.join(r'M:\pT1_cell_1\80p_4x_spat', 'parameters.json')
 with open(param_path) as parameter_file:
     graph_parameters = json.load(parameter_file)
 
-g = Graph(r'M:\pT1_selected - complete_annotation - organised\B08.8643_IVE_HE_pT1_selected - complete_annotation\masks\B08.8643_IVE_HE_0_abnormal', graph_parameters)
-g.add_nodes(g.create_nodes_from_folder())
-g.add_edges(g.create_edges_given_nodes())
+# g.add_edges(g.create_edges_given_nodes())
+
+# from lab_rat import graph_parameters
+# g = Graph(r'M:\pT1_cell_1\organised_folders\B08.8643_IVE_HE\masks\B08.8643_IVE_HE_0_abnormal', graph_parameters)
+# g.add_nodes(g.create_nodes_from_folder())
+g_23 = Graph(r'M:\pT1_cell_1\organised_folders\B09.15291_D_HE\masks\B09.15291_D_HE_23_normal', graph_parameters)
+g_23.self_assemble()
+g_31 = Graph(r'M:\pT1_cell_1\organised_folders\B08.13071_G_HE\masks\B08.13071_G_HE_31_normal', graph_parameters)
+g_31.self_assemble()
+

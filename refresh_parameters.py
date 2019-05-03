@@ -22,7 +22,7 @@ else:
     cells = pd.read_csv(path_to_detections, encoding="ISO-8859-1", delimiter='\t')
     attrib_options = {k + 1: v for (k, v) in zip(range(len(list(cells)[3:])), list(cells)[3:])}
 
-    for i, attribute_index in enumerate(parameters['node_attr_list']):
+    for i, attribute_index in enumerate(parameters['node']['node_attr_list']):
         print(attrib_options[int(attribute_index)])
         parameters['attribute_{}'.format(i)] = attrib_options[int(attribute_index)]
     with open(os.path.join(project_dir, 'parameters.txt'), 'w') as parameter_file:

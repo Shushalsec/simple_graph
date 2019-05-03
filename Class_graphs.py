@@ -29,11 +29,11 @@ class Node:
 class Edge:
     def __init__(self, node1, node2, attr_dict):  # to define an edge it is required to enter the nodes to be linked
         self.attr_dict = attr_dict
-        self._from = node1.identifier  # NB the underscore before the attribute name, not a protected member
-        self._to = node2.identifier
+        self.source = node1.identifier  # NB the underscore before the attribute name, not a protected member
+        self.target = node2.identifier
 
     def __str__(self):
-        return' Edge between nodes {} and {} with attribute set {}'.format(self._from, self._to, self.attr_dict)
+        return' Edge between nodes {} and {} with attribute set {}'.format(self.source, self.target, self.attr_dict)
 
 
 class Graph:
@@ -50,7 +50,7 @@ class Graph:
         self.parameter_dir = os.path.join(graph_dir, '../../..')
         with open(os.path.join(self.parameter_dir, 'parameters.txt')) as parameter_file:
             self.graph_parameters = json.load(parameter_file)
-        self.attrib_types_list = [int(key.strip()) for key in self.graph_parameters['node_attr_list'].split(',')]
+        self.attrib_types_list = [int(key.strip()) for key in self.graph_parameters['node']['node_attr_list'].split(',')]
 
         self.nodes = []  # node objects are kept in a list
         self.edges = []  # edge objects are kept in a list
@@ -101,6 +101,7 @@ class Graph:
         #     edge_list_to_add.append(another_edge)
         if self.graph_parameters['edge']['function'] == 'star':
             edge_list_to_add = [Edge(self.nodes[0], node, {}) for node in self.nodes[1:]]
+        # TODO: fix the spatial edge function definition bug!
         elif self.graph_parameters['edge']['function'] == 'spatial':
             x = np.asarray([self.nodes[i].x for i in range(len(self.nodes))])
             y = np.asarray([self.nodes[i].y for i in range(len(self.nodes))])
@@ -159,11 +160,11 @@ class XML():
 
     def one_edge_writer(self, edge_to_add):
         if self.graph_object.graph_parameters['edge']['function'] == 'star':
-            edge = ET.SubElement(self.graph, "edge", _from="_0", _to="_{}".format(edge_to_add._to))
+            edge = ET.SubElement(self.graph, "edge", source="_0", target="_{}".format(edge_to_add.target))
         else:
-            edge = ET.SubElement(self.graph, "edge", _from="_{}".format(edge_to_add._from), _to="_{}".format(edge_to_add._to))
+            edge = ET.SubElement(self.graph, "edge", source="_{}".format(edge_to_add.source), target="_{}".format(edge_to_add.target))
 
-    def XML_writer(self):
+    def XML_writer(self, file_extension):
         # self.graph.set('id',"graph_{}".format(graph_id))
         for node in self.graph_object.nodes:
             XML.one_node_writer(self, node)
@@ -172,7 +173,7 @@ class XML():
         tree = ET.ElementTree(self.root)
         tree.write((os.path.join(self.dst_path, "{}-graph.xhtml".format(self.graph_id))))  # for opening in a browser
         filename_graph = os.path.basename(os.path.normpath(self.graph_object.graph_dir))
-        tree.write((os.path.join(self.dst_path, "{}.gxl".format(filename_graph))))  # for using in GED software
+        tree.write((os.path.join(self.dst_path, "{}.{}".format(filename_graph, file_extension))))  # for using in GED software
 
 
 
@@ -219,36 +220,42 @@ def assemble_data(myfolder):
     cells = pd.read_excel(os.path.join(fold, fold_name + '-detections.xlsx'))[:3]
     attrib_options = {k + 1: v for (k, v) in zip(range(len(list(cells)[3:])), list(cells)[3:])}
     print(attrib_options)
-    for i, attribute_index in enumerate(parameters['node_attr_list']):
+    for i, attribute_index in enumerate(parameters['node']['node_attr_list']):
         print(attrib_options[int(attribute_index)])
         parameters['attribute_{}'.format(i)] = attrib_options[int(attribute_index)]
     with open(os.path.join(project_dir, 'parameters.txt'), 'w') as parameter_file:
         json.dump(parameters, parameter_file)
-
+    print('checkpoint 1')
     for subdirectory in os.listdir(masks):
         graph_dir = os.path.join(masks, subdirectory)
         one_graph = Graph(graph_dir)
         one_graph.self_assemble()
         i = subdirectory.split('_')[-2]
         one_XML = XML(one_graph, graph_dir, graph_id=i)
-        one_XML.XML_writer()
+        one_XML.XML_writer('gxl')
+        one_graphml = XML(one_graph, graph_dir, graph_id=1, root_tag='graphml')
+        one_graphml.XML_writer('graphml')
     copy_gxl_files(myfolder)
 
 
 if __name__ == '__main__':
-    os.chdir(r'M:\pT1_selected - template_annotated - QuPath_export_cell')
+    os.chdir(r'M:\pT1_selected - complete_annotation')
     # PROJECT_DIR = r'M:\crypt_to_graph'
     PROJECT_DIR = os.getcwd()
     # pooled_data_dir = os.path.join(PROJECT_DIR, 'pooled_image_data')
     version_name = os.path.basename(os.path.normpath(PROJECT_DIR))
+    folder = r'B08.8643_IVE_HE_pT1_selected - complete_annotation'
+    assemble_data(os.path.join(PROJECT_DIR, folder))
 
-    for folder in os.listdir(PROJECT_DIR):
-        print(folder, os.path.isdir(os.path.join(PROJECT_DIR, folder)), version_name in folder)
-        if os.path.isdir(os.path.join(PROJECT_DIR, folder)) and folder.endswith(version_name):
-            if len(os.listdir(os.path.join(PROJECT_DIR, folder)))>0:
-                if 'data' in os.listdir(os.path.join(PROJECT_DIR, folder)):
-                    print('Graphs already present, rename the data folder!')
-                    # Class_graphs.assemble_data(os.path.join(PROJECT_DIR, folder))
-                else:
-                    print('CREATING GRAPHS IN\t', folder)
-                    assemble_data(os.path.join(PROJECT_DIR, folder))
+    #
+    # for folder in os.listdir(PROJECT_DIR):
+    #     print(folder, os.path.isdir(os.path.join(PROJECT_DIR, folder)), version_name in folder)
+    #     if os.path.isdir(os.path.join(PROJECT_DIR, folder)) and folder.endswith(version_name):
+    #         if len(os.listdir(os.path.join(PROJECT_DIR, folder)))>0:
+    #             if 'data' in os.listdir(os.path.join(PROJECT_DIR, folder)):
+    #                 print('Graphs already present, rename the data folder!')
+    #                 # Class_graphs.assemble_data(os.path.join(PROJECT_DIR, folder))
+    #             else:
+    #                 print('CREATING GRAPHS IN\t', folder)
+    #                 assemble_data(os.path.join(PROJECT_DIR, folder))
+    #

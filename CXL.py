@@ -15,7 +15,7 @@ def create_class_dict(data_dir):
     return class_dict
 
 
-def addCXLs(class_dict):
+def addCXLs(class_dict, parameters):
     """
     Function for creating 3 sets from .gxl files, train : test : validation, with the size ratio of 2 : 1 :1. Files are
     copied to the new folders and .cxl files with the metadata are created to be used later by GED software
@@ -26,43 +26,55 @@ def addCXLs(class_dict):
     data_dict = {'train.cxl': [], 'test.cxl': [], 'validation.cxl': []}
     # set a switch for separating the .gxl files
     test_switch = True
-    # TODO: add an option for splitting data taking into account Proben-Nr
-    with open(os.path.join('parameters.txt')) as parameter_file:
-        parameters = json.load(parameter_file)
+    # with open(os.path.join('parameters.txt')) as parameter_file:
+    #     parameters = json.load(parameter_file)
+
     if parameters['split_data'] == 'wsi':
 
         for i, wsi in enumerate(parameters['pool_images']):
             # move every other into training set
             gxls_from_wsi = [gxl for gxl in os.listdir(data_dir) if gxl.endswith('.gxl') and wsi in gxl]
             if i % 2 == 0:
-
+                print('train')
+                print(wsi)
+                print(len(gxls_from_wsi))
                 data_dict['train.cxl'] = data_dict['train.cxl'] + gxls_from_wsi
             # move every other of the remaining into the test set
             elif test_switch:
+                print('test')
+                print(wsi)
+                print(len(gxls_from_wsi))
                 data_dict['test.cxl'] = data_dict['test.cxl'] + gxls_from_wsi
                 test_switch = False
             # move the remaining ones into the validation set
             else:
+                print('val')
+                print(wsi)
+                print(len(gxls_from_wsi))
                 data_dict['validation.cxl'] = data_dict['validation.cxl'] + gxls_from_wsi
                 test_switch = True
 
     # data_dir = r'M:\pT1_selected - exp1\data_for_GED'
     # dictionary to keep track of the gland titles to be used in 3 .cxl files
-        else:
-            # for each .gxl graph in data folder
-            for graph_class, graph_list in class_dict.items():
-                for i, gxl_file in enumerate(graph_list):
-                    # move every other into training set
-                    if i % 2 == 0:
-                        data_dict['train.cxl'].append(gxl_file)
-                    # move every other of the remaining into the test set
-                    elif test_switch:
-                        data_dict['test.cxl'].append(gxl_file)
-                        test_switch = False
-                    # move the remaining ones into the validation set
-                    else:
-                        data_dict['validation.cxl'].append(gxl_file)
-                        test_switch = True
+    #     else:
+    #         # for each .gxl graph in data folder
+    #         for graph_class, graph_list in class_dict.items():
+    #             for i, gxl_file in enumerate(graph_list):
+    #                 # move every other into training set
+    #                 if i % 2 == 0:
+    #                     data_dict['train.cxl'].append(gxl_file)
+    #                 # move every other of the remaining into the test set
+    #                 elif test_switch:
+    #                     data_dict['test.cxl'].append(gxl_file)
+    #                     test_switch = False
+    #                 # move the remaining ones into the validation set
+    #                 else:
+    #                     data_dict['validation.cxl'].append(gxl_file)
+    #                     test_switch = True
+    #     for key, value in data_dict.items():
+    #         print(key)
+    #         print(value)
+    #         print('***********')
         # inner function for creating the .cxl files when given the name of the dataset
 
     def createCXL(cxl_to_create):
@@ -90,5 +102,5 @@ def make_cxls():
     gxl_class_dict = create_class_dict(data_directory)
     addCXLs(gxl_class_dict)
 
-os.chdir(r'M:\pT1_selected - template_annotated - QuPath_export_cell')
-make_cxls()
+# os.chdir(r'M:\pT1_selected - template_annotated - QuPath_export_cell')
+# make_cxls()
