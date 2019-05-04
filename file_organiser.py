@@ -43,10 +43,9 @@ def organiser(directory_to_organise):
             shutil.move(srcname_cropped, dstname)
             shutil.move(srcname_mask, dstname)
             # shutil.move(srcname_features, dstname)
-            print('Files moved successfully!')
+            # print('Files moved successfully!')
         except:
             print('Something went wrong with finding files!')
-
 
 
 def final_organiser(all_folder):
@@ -62,13 +61,12 @@ def final_organiser(all_folder):
         annotation_detections = detections.loc[detections['Name'] == annotation]
         move_to = [s for s in folders if annotation == '_'.join(s.split('_')[-2:])][0]
         pd.DataFrame.to_excel(annotation_detections, os.path.join(masks_folder, move_to, '{}-detections.xlsx'.format(move_to)), index=False)
-        if not len(annotation_detections)>0:
+        if len(annotation_detections)<5:
             shutil.rmtree(os.path.join(masks_folder, move_to))
-            print(annotation, 'DELETED')
-
+            print(all_folder, annotation, 'DELETED')
 
 if __name__ == '__main__':
-    os.chdir(r'M:\pT1_cell_1')
+    os.chdir(r'M:\pT1_cell_4')
     PROJECT_DIR = os.getcwd()
     version_name = os.path.basename(os.path.normpath(PROJECT_DIR))
     org_folders = os.path.join(PROJECT_DIR, 'organised_folders')
@@ -88,7 +86,22 @@ if __name__ == '__main__':
 #     print(excel)
 #     if not len(pd.read_excel(excel_path)) >0:
 #         print('*********', excel, '*********')
-
-
-
-
+# folder_path = r'M:\pT1_cell_3\organised_folders'
+# len_dict = {}
+# for wsi in os.listdir(folder_path):
+#
+#     len_dict[wsi]=[len(pd.read_csv(os.path.join(folder_path, wsi, 'detections.txt'), encoding='latin1')), len(os.listdir(os.path.join(folder_path, wsi, 'masks')))]
+#
+# pd.DataFrame.from_dict(len_dict, orient='index').to_csv(os.path.join(folder_path, 'graph_sizes.csv'))
+#
+# res={}
+# for folder in os.listdir(r'M:\pT1_cell_4\organised_folders'):
+#     res[folder]=0
+#     df_path = os.path.join(r'M:\pT1_cell_4\organised_folders', folder, 'detections.txt')
+#     det = pd.read_csv(df_path, encoding='latin1', sep='\t')
+#     groups = det.groupby('Name')
+#     for g in groups:
+#         res[folder]+=len(g[1])
+#     pd.DataFrame(res).to_csv(r'M:\pT1_cell_4\organised_folders\{}\cell_counts.csv'.format(folder))
+#
+# pd.DataFrame.from_dict(res, orient='index').to_csv(r'M:\pT1_cell_4\cell_counts.csv')

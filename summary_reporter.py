@@ -10,7 +10,7 @@ def normalise_with_factor(vector, img_max):
 
 attr_dict = {'attr_0': "Nucleus: Circularity", 'attr_1':"Nucleus: Hematoxylin OD mean", 'attr_2':"Nucleus: Hematoxylin OD std dev", 'no_attr':"Not Attributed"}
 
-for exp_folder in [r'Z:\Computational_pathology\shushan\80p_7x_spat']:
+for exp_folder in [r'Z:\Computational_pathology\shushan\cell_33']:
     prop_n_paths = [os.path.join(exp_folder, folder) for folder in os.listdir(exp_folder) if 'prop_' in folder and '_tt' not in folder and '_test' not in folder]
 
     result_dict = {'n': [], 'e': [], 'acc': [], 'attr_num': []}
@@ -27,8 +27,8 @@ for exp_folder in [r'Z:\Computational_pathology\shushan\80p_7x_spat']:
                 node = float(line.replace('node=', '').strip('\n'))
             elif '#' not in line and 'edge=' in line:
                 edge = float(line.replace('edge=', '').strip('\n'))
-            elif '#' not in line and 'nodeAttr1=' in line:
-                attr_num = line.replace('nodeAttr1=', '').strip('\n')
+            elif '#' not in line and 'nodeAttr0=' in line:
+                attr_num = line.replace('nodeAttr0=', '').strip('\n')
 
 
         with open(os.path.join(prop_path, knn_file_name), 'r') as prop_file:
@@ -50,8 +50,8 @@ for attr_num, df in grouped_data:
     plt.title('attr={}'.format(attr_num))
     plt.xlabel('node insertion/deletion cost')
     plt.ylabel('edge insertion/deletion cost')
-    plt.xticks(np.arange(min(df['n']), max(df['n']) + 0.4, 0.4))
-    plt.yticks(np.arange(min(df['e']), max(df['e'])+0.1, 0.2))
+    plt.xticks(np.arange(min(df['n']), max(df['n']) + 0.4, 0.1))
+    plt.yticks(np.arange(min(df['e']), max(df['e'])+0.1, 0.1))
     plt.colorbar()
 
     for i, txt in enumerate(df['acc']):

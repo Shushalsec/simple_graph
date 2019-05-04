@@ -104,7 +104,10 @@ class Graph:
                 x = (x - np.min(x)) / (np.max(x) - np.min(x))
                 y = (y - np.min(y)) / (np.max(y) - np.min(y))
             tree = spatial.KDTree(list(zip(x, y)))
-            k_nearest = self.graph_parameters['edge']['KDTree_k'] + 1
+            if self.graph_parameters['edge']['KDTree_k']+1>len(self.nodes):
+                k_nearest=len(self.nodes)-1
+            else:
+                k_nearest = self.graph_parameters['edge']['KDTree_k']+1
             dist, nn = tree.query(tree.data, k=k_nearest)  # array of distances and k nearest neighbors for each node
             # iterate over the columns of the numpy array with nearest neighbor indices
             for column in range(1, nn.shape[1]):  # omit the first column as this is the node index itself or 0 distance
@@ -116,7 +119,7 @@ class Graph:
             keys = [key for key in list(self.nodes[0].attr_dict.keys())]
             measurements = [tuple(node.attr_dict[k] for k in keys) for node in self.nodes]
             tree = spatial.KDTree(measurements)
-            k_nearest = self.graph_parameters['edge']['KDTree_k'] + 1
+            k_nearest = self.graph_parameters['edge']['KDTree_k']+1
             dist, nn = tree.query(tree.data, k=k_nearest, p=1)  # array of k nearest neighbors for each node
             for column in range(1, nn.shape[1]):  # omit the first column as this is the node index itself or 0 distance
                 for j in range(nn.shape[0]):

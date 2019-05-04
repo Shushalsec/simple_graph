@@ -15,14 +15,19 @@ def create_folder(path):
         os.mkdir(path)
 
 
-def add_sets_to(parameters):
+# def add_sets_to(parameters):
+#     random.seed(parameters['split_seed'])
+#     L = parameters['pool_images'].copy()
+#     parameters['train_set'] = [L.pop(random.randrange(len(L))) for _ in range(round(len(L)/2))]
+#     parameters['val_set'] = [L.pop(random.randrange(len(L))) for _ in range(round(len(L)/2))]
+#     parameters['test_set'] = L
+
+def add_defined_sets_to(parameters):
     random.seed(parameters['split_seed'])
     L = parameters['pool_images'].copy()
-    parameters['train_set'] = [L.pop(random.randrange(len(L))) for _ in range(round(len(L)/2))]
-    parameters['val_set'] = [L.pop(random.randrange(len(L))) for _ in range(round(len(L)/2))]
-    parameters['test_set'] = L
-
-
+    parameters['train_set'] = ['B16.72691_A_HE', 'B16.51228_HE', 'B13.41640_HE', 'B11.9746_IIB_HE', 'B11.17936_G_HE', 'B08.8643_IVE_HE']
+    parameters['val_set'] = ['B16.6031_B_HE', 'B16.66236_C_HE', 'B09.15291_D_HE']
+    parameters['test_set'] = ['B08.13071_G_HE', 'B08.4858_IC_HE', 'B10.7957_ID_HE']
 
 
 def normalise_and_regiter_attributes(parameters, wsi_collection_dir):
@@ -95,8 +100,8 @@ def createCXL(cxl_to_create, list_of_gxls, data_dir, parameters):
     print(cxl_to_create, 'has', len(list_of_gxls), 'graphs!')
 
 if __name__ == '__main__':
-    os.chdir(r'M:\pT1_cell_1')  # directory with most recent QuPath outputs
-    exp_folder = '80p_7x_spat'  # one example folder TODO: loop through all the experiment folders
+    os.chdir(r'M:\pT1_cell_4')  # directory with most recent QuPath outputs
+    exp_folder = 'cell_33'  # one example folder TODO: loop through all the experiment folders
     gxl_folder = os.path.join(exp_folder, 'gxl')
     create_folder(gxl_folder)
     organised_folders = 'organised_folders'
@@ -104,7 +109,7 @@ if __name__ == '__main__':
     with open(param_path) as parameter_file:
         graph_parameters = json.load(parameter_file)
 
-    add_sets_to(graph_parameters)
+    add_defined_sets_to(graph_parameters)
     normalise_and_regiter_attributes(graph_parameters, organised_folders)
     #
     graphs = []
